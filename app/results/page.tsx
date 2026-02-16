@@ -70,11 +70,18 @@ export default function ResultsPage() {
         body: JSON.stringify(updatedFormData),
       });
       
-      if (!response.ok) {
-        throw new Error("Failed to recompute risks");
+      const result = await response.json();
+      
+      if (!response.ok || !result.success) {
+        const errorMessage =
+          result.error?.message ||
+          result.errors?.[0] ||
+          "Failed to recompute risks";
+        throw new Error(errorMessage);
       }
       
-      const newResults = await response.json();
+      // Extract data from wrapped response
+      const newResults = result.data || result;
       setResults(newResults);
       return newResults;
     } catch (error) {

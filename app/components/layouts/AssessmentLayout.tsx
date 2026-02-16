@@ -5,6 +5,7 @@ type AssessmentLayoutProps = {
   currentStep: number;
   progress: number;
   totalSteps?: number;
+  visibleSteps?: number[]; // Array of step numbers to show in StepChips
   children: React.ReactNode;
   footer: React.ReactNode;
   headerActions?: React.ReactNode;
@@ -14,6 +15,7 @@ export function AssessmentLayout({
   currentStep,
   progress,
   totalSteps = TOTAL_STEPS,
+  visibleSteps,
   children,
   footer,
   headerActions,
@@ -63,7 +65,7 @@ export function AssessmentLayout({
               </div>
             </div>
             <div className="mt-6">
-              <StepChips currentStep={currentStep} />
+              <StepChips currentStep={currentStep} visibleSteps={visibleSteps} />
             </div>
           </div>
         </header>
@@ -73,7 +75,7 @@ export function AssessmentLayout({
         </main>
 
         <div className="fixed bottom-0 left-0 right-0 z-20 border-t border-slate-100 bg-white/95 backdrop-blur-sm shadow-lg shadow-slate-200/50">
-          <div className="mx-auto max-w-[1920px]">
+          <div className="mx-auto max-w-[1920px] px-8 lg:px-12">
             <div className="mx-auto max-w-7xl">{footer}</div>
           </div>
         </div>

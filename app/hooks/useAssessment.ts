@@ -15,12 +15,18 @@ export function useSubmitAssessment() {
         body: JSON.stringify(data),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.errors?.[0] || "Failed to submit assessment");
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        const errorMessage =
+          result.error?.message ||
+          result.errors?.[0] ||
+          "Failed to submit assessment";
+        throw new Error(errorMessage);
       }
 
-      return response.json();
+      // Return the data from successful response
+      return result.data;
     },
   });
 }

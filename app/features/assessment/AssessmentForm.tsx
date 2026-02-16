@@ -152,6 +152,15 @@ export function AssessmentForm() {
     ? [...BASIC_STEPS, ...ADVANCED_STEPS]
     : BASIC_STEPS;
   
+  // If current step is not in visible steps (e.g., switching from advanced to basic while on step 6),
+  // redirect to the last visible step
+  useEffect(() => {
+    if (!visibleSteps.includes(step)) {
+      const lastVisibleStep = visibleSteps[visibleSteps.length - 1];
+      setStep(lastVisibleStep);
+    }
+  }, [isAdvancedMode, visibleSteps, step]);
+  
   const currentTotalSteps = visibleSteps.length;
   const currentProgress = useMemo(
     () => Math.round((visibleSteps.indexOf(step) + 1) / currentTotalSteps * 100),
@@ -163,6 +172,7 @@ export function AssessmentForm() {
       currentStep={visibleSteps.indexOf(step) + 1}
       progress={currentProgress}
       totalSteps={currentTotalSteps}
+      visibleSteps={visibleSteps}
       headerActions={
         <div className="flex items-center gap-4">
           <button
@@ -187,7 +197,7 @@ export function AssessmentForm() {
         </div>
       }
       footer={
-        <footer className="flex flex-col gap-4 border-t border-slate-100 bg-slate-50/50 px-8 py-6 lg:flex-row lg:items-center lg:justify-between lg:px-12 lg:py-8">
+        <footer className="flex flex-col gap-4 border-t border-slate-100 bg-slate-50/50 py-6 lg:flex-row lg:items-center lg:justify-between lg:py-8">
           <button
             type="button"
             onClick={goBack}
@@ -205,7 +215,7 @@ export function AssessmentForm() {
             type="button"
             onClick={step === visibleSteps[visibleSteps.length - 1] ? handleFinish : goNext}
             disabled={isPending}
-            className="inline-flex items-center justify-center gap-2 rounded-full bg-sky-600 px-7 py-3.5 text-base font-semibold text-white shadow-sm shadow-sky-200 transition hover:bg-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50 disabled:cursor-not-allowed disabled:bg-sky-300"
+            className="ml-auto inline-flex items-center justify-center gap-2 rounded-full bg-sky-600 px-7 py-3.5 text-base font-semibold text-white shadow-sm shadow-sky-200 transition hover:bg-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50 disabled:cursor-not-allowed disabled:bg-sky-300 lg:ml-0"
           >
             {isPending
               ? "Processing..."

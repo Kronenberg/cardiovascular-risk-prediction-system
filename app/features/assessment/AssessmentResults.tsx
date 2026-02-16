@@ -98,6 +98,14 @@ export function AssessmentResults({
   const [isRecomputing, setIsRecomputing] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
 
+  // Ensure results has top3 array
+  const safeResults = {
+    ...results,
+    top3: results.top3 || [],
+    errors: results.errors || [],
+    warnings: results.warnings || [],
+  };
+
   // Initialize what-if data from original form data
   useEffect(() => {
     if (originalFormData && !isInitialized) {
@@ -137,10 +145,14 @@ export function AssessmentResults({
           ...originalFormData,
           ...whatIfData,
         };
-        await onRecompute(mergedData);
+        const newResults = await onRecompute(mergedData);
+        // Ensure results have top3 array
+        if (newResults && (!newResults.top3 || !Array.isArray(newResults.top3))) {
+          console.warn("Invalid results structure:", newResults);
+        }
       } catch (error) {
         console.error("Recomputation error:", error);
-        // Error is already handled in handleRecompute
+        // Don't update state on error - keep previous results
       } finally {
         setIsRecomputing(false);
       }
@@ -202,7 +214,7 @@ export function AssessmentResults({
         </div>
 
         {/* Warnings */}
-        {results.warnings && results.warnings.length > 0 && (
+        {safeResults.warnings && safeResults.warnings.length > 0 && (
           <div className="rounded-lg border border-yellow-200 bg-yellow-50 px-8 py-6">
             <div className="flex items-start gap-4">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-yellow-100 text-yellow-700 text-xl font-semibold">
@@ -211,7 +223,7 @@ export function AssessmentResults({
               <div className="flex-1">
                 <h3 className="text-lg font-semibold text-yellow-900 mb-3">Important Notes</h3>
                 <ul className="space-y-2 text-base text-yellow-800">
-                  {results.warnings.map((warning, idx) => (
+                  {safeResults.warnings.map((warning, idx) => (
                     <li key={idx} className="flex items-start gap-3">
                       <span className="text-yellow-600 mt-1">•</span>
                       <span>{warning}</span>
@@ -302,131 +314,149 @@ export function AssessmentResults({
           </h2>
           
           <div className="space-y-6">
-            {results.top3.map((risk, index) => {
-              const config = levelConfig[risk.level];
-              const riskLabel = riskTypeLabels[risk.id] || risk.title;
-              
-              return (
-                <div
-                  key={risk.id}
-                  className={`rounded-lg border-2 ${config.border} ${config.bg} overflow-hidden`}
-                >
-                  <div className="p-8">
-                    {/* Header */}
-                    <div className="flex items-start justify-between gap-6 mb-8">
-                      <div className="flex items-start gap-5 flex-1">
-                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-white border-2 border-slate-300 font-bold text-xl text-slate-700 shadow-sm">
-                          {index + 1}
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-4 mb-3">
-                            <h3 className="text-2xl font-semibold text-slate-900 lg:text-3xl">
-                              {risk.title}
-                            </h3>
-                            <span className={`inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold ${config.badge}`}>
-                              <span>{config.icon}</span>
-                              {config.label}
-                            </span>
+            {safeResults.top3 && safeResults.top3.length > 0 ? (
+              safeResults.top3.map((risk, index) => {
+                const config = levelConfig[risk.level];
+                const riskLabel = riskTypeLabels[risk.id] || risk.title;
+                
+                return (
+                  <div
+                    key={risk.id}
+                    className={`rounded-lg border-2 ${config.border} ${config.bg} overflow-hidden`}
+                  >
+                    <div className="p-8">
+                      {/* Header */}
+                      <div className="flex items-start justify-between gap-6 mb-8">
+                        <div className="flex items-start gap-5 flex-1">
+                          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-white border-2 border-slate-300 font-bold text-xl text-slate-700 shadow-sm">
+                            {index + 1}
                           </div>
-                          {risk.value && (
-                            <p className="text-base text-slate-600">
-                              {riskLabel}
-                              {risk.value.bmi && ` • BMI: ${risk.value.bmi}`}
-                              {risk.value.riskPercent !== undefined && (
-                                <>
-                                  {risk.value.validated === false && (
-                                    <span className="text-orange-600 font-medium"> • 10-year risk not validated for this age group</span>
-                                  )}
-                                  {risk.value.validated !== false && ` • 10-year risk: ${risk.value.riskPercent}%`}
-                                </>
-                              )}
-                              {risk.value.systolic && ` • SBP: ${risk.value.systolic} mmHg`}
-                              {risk.value.note && (
-                                <span className="block mt-1 text-sm text-slate-500 italic">
-                                  {risk.value.note}
-                                </span>
-                              )}
-                            </p>
-                          )}
+                          <div className="flex-1">
+                            <div className="flex items-center gap-4 mb-3">
+                              <h3 className="text-2xl font-semibold text-slate-900 lg:text-3xl">
+                                {risk.title}
+                              </h3>
+                              <span className={`inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold ${config.badge}`}>
+                                <span>{config.icon}</span>
+                                {config.label}
+                              </span>
+                            </div>
+                            {risk.value && (
+                              <p className="text-base text-slate-600">
+                                {riskLabel}
+                                {risk.value.bmi && ` • BMI: ${risk.value.bmi}`}
+                                {risk.value.riskPercent !== undefined && (
+                                  <>
+                                    {risk.value.validated === false && (
+                                      <span className="text-orange-600 font-medium"> • 10-year risk not validated for this age group</span>
+                                    )}
+                                    {risk.value.validated !== false && ` • 10-year risk: ${risk.value.riskPercent}%`}
+                                  </>
+                                )}
+                                {risk.value.systolic && ` • SBP: ${risk.value.systolic} mmHg`}
+                                {risk.value.note && (
+                                  <span className="block mt-1 text-sm text-slate-500 italic">
+                                    {risk.value.note}
+                                  </span>
+                                )}
+                              </p>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    {/* Warnings (if any) */}
-                    {risk.warnings && risk.warnings.length > 0 && (
-                      <div className="mb-6 rounded-lg border-2 border-orange-200 bg-orange-50/50 p-5">
-                        <h4 className="text-base font-semibold text-orange-900 mb-3 flex items-center gap-2">
-                          <span>⚠️</span>
-                          Important Note
-                        </h4>
-                        <ul className="space-y-2">
-                          {risk.warnings.map((warning, idx) => (
-                            <li key={idx} className="flex items-start gap-3 text-base text-orange-800">
-                              <span className="text-orange-500 mt-1.5 text-lg">•</span>
-                              <span className="leading-relaxed">{warning}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
+                      {/* Warnings (if any) */}
+                      {risk.warnings && risk.warnings.length > 0 && (
+                        <div className="mb-6 rounded-lg border-2 border-orange-200 bg-orange-50/50 p-5">
+                          <h4 className="text-base font-semibold text-orange-900 mb-3 flex items-center gap-2">
+                            <span>⚠️</span>
+                            Important Note
+                          </h4>
+                          <ul className="space-y-2">
+                            {risk.warnings.map((warning, idx) => (
+                              <li key={idx} className="flex items-start gap-3 text-base text-orange-800">
+                                <span className="text-orange-500 mt-1.5 text-lg">•</span>
+                                <span className="leading-relaxed">{warning}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
 
-                    {/* Why we think this (Top 3 drivers) */}
-                    <div className="mb-8">
-                      <h4 className="text-lg font-semibold text-slate-900 mb-4">
-                        Why we think this
-                      </h4>
-                      <p className="text-sm text-slate-600 mb-4">
-                        Top {Math.min(risk.why.length, 3)} contributing factors:
-                      </p>
-                      <ul className="space-y-3">
-                        {risk.why.slice(0, 3).map((reason, idx) => (
-                          <li key={idx} className="flex items-start gap-3 text-base text-slate-700">
-                            <span className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-200 text-slate-700 text-xs font-bold">
-                              {idx + 1}
-                            </span>
-                            <span className="leading-relaxed">{reason}</span>
-                          </li>
-                        ))}
-                        {risk.why.length > 3 && (
-                          <li className="text-sm text-slate-500 italic">
-                            + {risk.why.length - 3} more factor{risk.why.length - 3 > 1 ? "s" : ""}
-                          </li>
-                        )}
-                      </ul>
-                    </div>
-
-                    {/* What would reduce it (2-3 actions) */}
-                    {risk.actions && risk.actions.length > 0 && (
-                      <div className="rounded-lg border border-slate-200 bg-slate-50 p-6">
+                      {/* Why we think this (Top 3 drivers) */}
+                      <div className="mb-8">
                         <h4 className="text-lg font-semibold text-slate-900 mb-4">
-                          What would reduce it
+                          Why we think this
                         </h4>
                         <p className="text-sm text-slate-600 mb-4">
-                          {risk.actions.length <= 3 
-                            ? "Recommended actions:" 
-                            : `Top ${Math.min(risk.actions.length, 3)} recommended actions:`}
+                          Top {Math.min(risk.why.length, 3)} contributing factors:
                         </p>
                         <ul className="space-y-3">
-                          {risk.actions.slice(0, 3).map((action, idx) => (
-                            <li key={idx} className="flex items-start gap-4 text-base text-slate-700">
-                              <span className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 text-sm font-semibold">
-                                ✓
+                          {risk.why.slice(0, 3).map((reason, idx) => (
+                            <li key={idx} className="flex items-start gap-3 text-base text-slate-700">
+                              <span className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-200 text-slate-700 text-xs font-bold">
+                                {idx + 1}
                               </span>
-                              <span className="leading-relaxed">{action}</span>
+                              <span className="leading-relaxed">{reason}</span>
                             </li>
                           ))}
-                          {risk.actions.length > 3 && (
-                            <li className="text-sm text-slate-500 italic pl-10">
-                              + {risk.actions.length - 3} more action{risk.actions.length - 3 > 1 ? "s" : ""}
+                          {risk.why.length > 3 && (
+                            <li className="text-sm text-slate-500 italic">
+                              + {risk.why.length - 3} more factor{risk.why.length - 3 > 1 ? "s" : ""}
                             </li>
                           )}
                         </ul>
                       </div>
-                    )}
+
+                      {/* What would reduce it (2-3 actions) */}
+                      {risk.actions && risk.actions.length > 0 && (
+                        <div className="rounded-lg border border-slate-200 bg-slate-50 p-6">
+                          <h4 className="text-lg font-semibold text-slate-900 mb-4">
+                            What would reduce it
+                          </h4>
+                          <p className="text-sm text-slate-600 mb-4">
+                            {risk.actions.length <= 3 
+                              ? "Recommended actions:" 
+                              : `Top ${Math.min(risk.actions.length, 3)} recommended actions:`}
+                          </p>
+                          <ul className="space-y-3">
+                            {risk.actions.slice(0, 3).map((action, idx) => (
+                              <li key={idx} className="flex items-start gap-4 text-base text-slate-700">
+                                <span className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 text-sm font-semibold">
+                                  ✓
+                                </span>
+                                <span className="leading-relaxed">{action}</span>
+                              </li>
+                            ))}
+                            {risk.actions.length > 3 && (
+                              <li className="text-sm text-slate-500 italic pl-10">
+                                + {risk.actions.length - 3} more action{risk.actions.length - 3 > 1 ? "s" : ""}
+                              </li>
+                            )}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })
+            ) : (
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-8 text-center">
+                <p className="text-base text-slate-600">
+                  No risk factors calculated. Please check your input data.
+                </p>
+                {safeResults.errors && safeResults.errors.length > 0 && (
+                  <div className="mt-4">
+                    <p className="text-sm font-semibold text-rose-600 mb-2">Errors:</p>
+                    <ul className="text-sm text-rose-600 space-y-1">
+                      {safeResults.errors.map((error, idx) => (
+                        <li key={idx}>• {error}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

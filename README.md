@@ -65,67 +65,144 @@ A modern, clinical-grade web application for assessing cardiovascular disease ri
 - **UI Library**: React 19.2
 - **Styling**: Tailwind CSS 4.0
 - **State Management**: React Query (@tanstack/react-query)
-- **Validation**: Custom validation + Zod (server-side)
+- **Validation**: Custom validation with service layer
 - **Deployment**: Vercel-ready
 
-### Project Structure
+### Backend Architecture
+
+The backend follows a **layered service architecture** with clear separation of concerns:
 
 ```
-cardiovascular-risk-prediction-system/
-├── app/
-│   ├── api/
-│   │   └── predict/
-│   │       └── route.ts          # API endpoint for risk calculation
-│   ├── components/
-│   │   ├── layouts/              # Page layouts
-│   │   │   ├── AssessmentLayout.tsx
-│   │   │   ├── ResultsLayout.tsx
-│   │   │   ├── SectionCard.tsx
-│   │   │   └── StepChips.tsx
-│   │   └── ui/                   # Reusable UI components
-│   │       ├── Field.tsx
-│   │       ├── RadioGroup.tsx
-│   │       ├── Toggle.tsx
-│   │       ├── Slider.tsx
-│   │       ├── Tooltip.tsx
-│   │       └── InputTag.tsx
-│   ├── features/
-│   │   └── assessment/
-│   │       ├── AssessmentForm.tsx      # Main form component
-│   │       ├── AssessmentResults.tsx   # Results display
-│   │       └── sections/              # Form sections
-│   │           ├── SectionDemographics.tsx
-│   │           ├── SectionVitals.tsx
-│   │           ├── SectionLipids.tsx
-│   │           ├── SectionMetabolic.tsx
-│   │           ├── SectionSmoking.tsx
-│   │           ├── SectionBodyComposition.tsx
-│   │           ├── SectionFamilyHistory.tsx
-│   │           └── SectionLifestyle.tsx
-│   ├── hooks/
-│   │   └── useAssessment.ts      # React Query hooks
-│   ├── lib/
-│   │   ├── risk-calculations.ts  # Core risk calculation logic
-│   │   ├── validation.ts         # Type definitions
-│   │   └── unit-conversion.ts    # Cholesterol unit conversion
-│   ├── providers/
-│   │   └── QueryProvider.tsx     # React Query provider
-│   ├── results/
-│   │   └── page.tsx              # Results page
-│   ├── types/
-│   │   └── assessment.ts        # TypeScript types
-│   ├── utils/
-│   │   ├── validation.ts        # Client-side validation
-│   │   └── human-validation.ts  # Human-friendly messages
-│   ├── constants/
-│   │   ├── assessment.ts         # Form constants
-│   │   └── sample-patient.ts    # Sample data
-│   ├── layout.tsx                # Root layout
-│   └── page.tsx                  # Home page
-├── public/                       # Static assets
-├── package.json
-├── tsconfig.json
-└── next.config.ts
+┌─────────────────────────────────────────────┐
+│         API Layer (Route Handlers)         │
+│  - Request/Response handling                │
+│  - Error handling middleware                │
+│  - Input validation                         │
+└─────────────────────────────────────────────┘
+                    ↓
+┌─────────────────────────────────────────────┐
+│         Service Layer (Business Logic)      │
+│  - PatientNormalizationService             │
+│  - RiskAssessmentService                    │
+│  - WarningDetectionService                  │
+└─────────────────────────────────────────────┘
+                    ↓
+┌─────────────────────────────────────────────┐
+│      Domain Layer (Core Calculations)       │
+│  - Risk calculation algorithms              │
+│  - Model implementations (ASCVD, etc.)      │
+│  - Unit conversions                         │
+└─────────────────────────────────────────────┘
+```
+
+#### Backend Structure
+
+```
+app/
+├── api/
+│   └── predict/
+│       └── route.ts                    # API endpoint (thin controller)
+│
+├── lib/
+│   ├── middleware/
+│   │   └── api-handler.ts              # Request/response utilities
+│   │
+│   ├── errors/
+│   │   └── api-errors.ts               # Custom error classes
+│   │
+│   ├── validators/
+│   │   └── patient-validator.ts        # Input validation schemas
+│   │
+│   ├── services/                       # Business logic layer
+│   │   ├── patient-normalization.service.ts
+│   │   ├── risk-assessment.service.ts
+│   │   └── warning-detection.service.ts
+│   │
+│   ├── risk-calculations.ts            # Core domain logic
+│   ├── validation.ts                   # Type definitions
+│   └── unit-conversion.ts              # Utility functions
+```
+
+#### Key Architectural Principles
+
+1. **Separation of Concerns**
+   - API routes are thin controllers that delegate to services
+   - Business logic lives in service classes
+   - Domain calculations are pure functions
+
+2. **Error Handling**
+   - Custom error classes (`ValidationError`, `RiskCalculationError`)
+   - Centralized error response formatting
+   - Proper HTTP status codes
+
+3. **Type Safety**
+   - Full TypeScript coverage
+   - Strong typing throughout the stack
+   - Type-safe service interfaces
+
+4. **Testability**
+   - Services are easily unit testable
+   - Pure functions for calculations
+   - Dependency injection ready
+
+5. **Maintainability**
+   - Single Responsibility Principle
+   - Clear service boundaries
+   - Easy to extend with new risk models
+
+### Frontend Architecture
+
+#### Project Structure
+
+```
+app/
+├── components/
+│   ├── layouts/                        # Page layouts
+│   │   ├── AssessmentLayout.tsx
+│   │   ├── ResultsLayout.tsx
+│   │   ├── SectionCard.tsx
+│   │   └── StepChips.tsx
+│   └── ui/                            # Reusable UI components
+│       ├── Field.tsx
+│       ├── RadioGroup.tsx
+│       ├── Toggle.tsx
+│       ├── Slider.tsx
+│       ├── Tooltip.tsx
+│       └── InputTag.tsx
+│
+├── features/
+│   └── assessment/
+│       ├── AssessmentForm.tsx          # Main form component
+│       ├── AssessmentResults.tsx       # Results display
+│       └── sections/                  # Form sections
+│           ├── SectionDemographics.tsx
+│           ├── SectionVitals.tsx
+│           ├── SectionLipids.tsx
+│           ├── SectionMetabolic.tsx
+│           ├── SectionSmoking.tsx
+│           ├── SectionBodyComposition.tsx
+│           ├── SectionFamilyHistory.tsx
+│           └── SectionLifestyle.tsx
+│
+├── hooks/
+│   └── useAssessment.ts               # React Query hooks
+│
+├── providers/
+│   └── QueryProvider.tsx               # React Query provider
+│
+├── results/
+│   └── page.tsx                        # Results page
+│
+├── types/
+│   └── assessment.ts                   # TypeScript types
+│
+├── utils/
+│   ├── validation.ts                   # Client-side validation
+│   └── human-validation.ts             # Human-friendly messages
+│
+└── constants/
+    ├── assessment.ts                   # Form constants
+    └── sample-patient.ts               # Sample data
 ```
 
 ### Architecture Patterns
@@ -138,20 +215,23 @@ cardiovascular-risk-prediction-system/
 #### 2. **Layered Architecture**
 ```
 ┌─────────────────────────────────────┐
-│   Presentation Layer (Components)  │
+│   Presentation Layer (Components)   │
 ├─────────────────────────────────────┤
-│   Feature Layer (Business Logic)   │
+│   Feature Layer (UI Logic)          │
 ├─────────────────────────────────────┤
-│   API Layer (Route Handlers)       │
+│   API Layer (Route Handlers)        │
 ├─────────────────────────────────────┤
-│   Domain Layer (Risk Calculations) │
+│   Service Layer (Business Logic)    │
+├─────────────────────────────────────┤
+│   Domain Layer (Risk Calculations)  │
 └─────────────────────────────────────┘
 ```
 
 #### 3. **Data Flow**
 ```
 User Input → Client Validation → API Route → 
-Normalization → Risk Calculation → Ranking → 
+Input Validation → Normalization Service → 
+Risk Assessment Service → Warning Detection → 
 Results Display → What-If Recalculation
 ```
 
@@ -256,27 +336,94 @@ Risks recalculate automatically after 500ms of inactivity.
 
 ### Key Files
 
-- **Risk Calculations**: `app/lib/risk-calculations.ts`
-  - Core business logic for all risk models
-  - Normalization and validation
-  - Risk ranking algorithm
+#### Backend
+
+- **API Route**: `app/api/predict/route.ts`
+  - Thin controller layer
+  - Orchestrates service calls
+  - Error handling wrapper
+
+- **Services** (`app/lib/services/`):
+  - `patient-normalization.service.ts`: Data transformation and normalization
+  - `risk-assessment.service.ts`: Risk calculation orchestration
+  - `warning-detection.service.ts`: Clinical warning detection
+
+- **Validators**: `app/lib/validators/patient-validator.ts`
+  - Input validation schemas
+  - Field-level validation rules
+  - Comprehensive validation pipeline
+
+- **Domain Logic**: `app/lib/risk-calculations.ts`
+  - Core risk calculation algorithms
+  - ASCVD, BP, Diabetes, Obesity models
+  - Risk ranking and scoring
+
+- **Error Handling**: `app/lib/errors/api-errors.ts`
+  - Custom error classes
+  - Error response formatting
+  - HTTP status code mapping
+
+#### Frontend
 
 - **Form Component**: `app/features/assessment/AssessmentForm.tsx`
   - Multi-step form state management
   - Progressive disclosure logic
   - Validation orchestration
 
-- **API Route**: `app/api/predict/route.ts`
-  - Server-side endpoint
-  - Data normalization
-  - Risk calculation orchestration
+- **Results Component**: `app/features/assessment/AssessmentResults.tsx`
+  - Results display
+  - What-if scenario handling
+  - Interactive risk exploration
+
+### Backend Architecture Details
+
+#### Service Layer Pattern
+
+The backend uses a **service layer architecture** where:
+
+1. **API Routes** (`app/api/`) are thin controllers that:
+   - Parse requests
+   - Call services
+   - Format responses
+   - Handle errors
+
+2. **Services** (`app/lib/services/`) contain business logic:
+   - `PatientNormalizationService`: Transforms form data to normalized format
+   - `RiskAssessmentService`: Orchestrates risk calculations
+   - `WarningDetectionService`: Detects clinical warnings and red flags
+
+3. **Validators** (`app/lib/validators/`) handle input validation:
+   - Field-level validation rules
+   - Type checking
+   - Range validation
+
+4. **Domain Layer** (`app/lib/risk-calculations.ts`) contains:
+   - Pure calculation functions
+   - Risk model implementations
+   - Ranking algorithms
+
+#### Error Handling
+
+- Custom error classes (`ValidationError`, `RiskCalculationError`, `DataNormalizationError`)
+- Centralized error response formatting
+- Proper HTTP status codes (400 for validation, 500 for server errors)
+- Error messages are user-friendly and actionable
+
+#### Benefits of This Architecture
+
+- **Testability**: Services can be unit tested independently
+- **Maintainability**: Clear separation of concerns
+- **Extensibility**: Easy to add new risk models or validators
+- **Type Safety**: Full TypeScript coverage throughout
+- **Error Handling**: Consistent error responses across the API
 
 ### Adding New Risk Models
 
 1. Add calculation function in `app/lib/risk-calculations.ts`
-2. Add to `evaluateRisks()` function
-3. Update types in `app/types/assessment.ts` if needed
-4. Add display logic in `AssessmentResults.tsx`
+2. Add to `evaluateRisks()` function in `risk-calculations.ts`
+3. Update `RiskAssessmentService` if needed
+4. Update types in `app/types/assessment.ts` if needed
+5. Add display logic in `AssessmentResults.tsx`
 
 ### Styling
 

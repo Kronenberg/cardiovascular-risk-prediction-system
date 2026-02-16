@@ -18,142 +18,50 @@ export type ValidationResult = {
 };
 
 /**
- * Normalize and validate patient data
+ * @deprecated Use PatientNormalizationService and WarningDetectionService instead
+ * This function is kept for backward compatibility but will be removed in future versions
  */
 export function normalizeAndValidate(
   data: any
 ): { patient: NormalizedPatient | null; validation: ValidationResult } {
-  const errors: string[] = [];
-  const warnings: string[] = [];
+  // Legacy implementation - kept for compatibility
+  // New code should use the service layer
+  const { patientNormalizationService } = require("./services/patient-normalization.service");
+  const { warningDetectionService } = require("./services/warning-detection.service");
+  const { validatePatientData } = require("./validators/patient-validator");
+
+  const validation = validatePatientData(data);
+  if (!validation.isValid) {
+    return {
+      patient: null,
+      validation: {
+        errors: validation.errors.map((e) => e.message),
+        warnings: [],
+      },
+    };
+  }
 
   try {
-    // Basic validation
-    if (!data.age || data.age === "") {
-      errors.push("Age is required");
-    }
-    if (!data.sexAtBirth || data.sexAtBirth === "") {
-      errors.push("Sex assigned at birth is required");
-    }
-    if (!data.systolicBp || data.systolicBp === "") {
-      errors.push("Systolic blood pressure is required");
-    }
-    if (!data.onBpMeds || data.onBpMeds === "") {
-      errors.push("BP medication status is required");
-    }
-    if (!data.hasDiabetes || data.hasDiabetes === "") {
-      errors.push("Diabetes status is required");
-    }
-    if (!data.smokingStatus || data.smokingStatus === "") {
-      errors.push("Smoking status is required");
-    }
-
-    if (data.hasLabResults) {
-      if (!data.totalCholesterol || data.totalCholesterol === "") {
-        errors.push("Total cholesterol is required when lab results are available");
-      }
-      if (!data.hdlCholesterol || data.hdlCholesterol === "") {
-        errors.push("HDL cholesterol is required when lab results are available");
-      }
-    }
-
-    if (errors.length > 0) {
-      return { patient: null, validation: { errors, warnings } };
-    }
-
-    // Parse and validate
-    const age = parseInt(data.age, 10);
-    const systolicBp = parseInt(data.systolicBp, 10);
-
-    // Age validation
-    if (age < 20 || age > 79) {
-      if (age < 20) {
-        warnings.push("Age is below validated range (20-79). ASCVD equations are not validated for this age.");
-      } else {
-        warnings.push("Age exceeds validated range (20-79). Results may be less reliable.");
-      }
-    }
-
-    // Red-flag detection for BP
-    const diastolicBp = data.diastolicBp ? parseInt(data.diastolicBp, 10) : null;
+    const patient = patientNormalizationService.normalize(data);
+    const warnings = warningDetectionService.detectWarnings(patient);
     
-    if (systolicBp < 90) {
-      warnings.push(
-        `Systolic BP of ${systolicBp} mmHg is very low (<90 mmHg). Please verify measurement accuracy.`
-      );
-      if (data.onBpMeds === "yes") {
-        warnings.push(
-          "Possible data entry error: Low BP with BP medications marked 'yes'. Please re-check measurements."
-        );
-      }
-    } else if (systolicBp < 70) {
-      warnings.push(
-        `Systolic BP of ${systolicBp} mmHg is extremely low. Please verify measurement accuracy.`
-      );
-      if (data.onBpMeds === "yes") {
-        warnings.push(
-          "Possible data entry error: Very low BP with BP medications marked 'yes'. Please re-check measurements."
-        );
-      }
-    }
-    
-    if (systolicBp > 180) {
-      warnings.push(
-        `Systolic BP of ${systolicBp} mmHg is very high (>180 mmHg). Consider immediate medical evaluation.`
-      );
-    }
-    
-    if (diastolicBp && diastolicBp > 120) {
-      warnings.push(
-        `Diastolic BP of ${diastolicBp} mmHg is very high (>120 mmHg). Consider immediate medical evaluation.`
-      );
-    }
-
-    // Red-flag detection for BMI
-    if (data.bmi && data.bmi > 40) {
-      warnings.push("BMI >40 indicates severe obesity (Class III), a major cardiometabolic risk factor requiring immediate attention.");
-    } else if (data.bmi && data.bmi > 35) {
-      warnings.push("BMI ≥35 indicates severe obesity, a major cardiometabolic risk factor.");
-    }
-
-    // Convert cholesterol units if needed (normalize to mg/dL for calculations)
-    const cholesterolUnit = data.cholesterolUnit || "mgdL";
-    
-    const normalizeCholesterol = (value: string | undefined): number | undefined => {
-      if (!value || value.trim() === "") return undefined;
-      const numValue = parseFloat(value);
-      if (isNaN(numValue)) return undefined;
-      // Convert to mg/dL if needed
-      return cholesterolUnit === "mmolL" ? mmolLToMgdL(numValue) : Math.round(numValue);
+    return {
+      patient,
+      validation: {
+        errors: [],
+        warnings: warnings.map((w) => w.message),
+      },
     };
-
-    // Parse patient data
-    const patient: NormalizedPatient = {
-      age,
-      sexAtBirth: data.sexAtBirth as "male" | "female",
-      raceEthnicity: data.raceEthnicity || undefined,
-      systolicBp,
-      diastolicBp: data.diastolicBp ? parseInt(data.diastolicBp, 10) : undefined,
-      onBpMeds: data.onBpMeds as "yes" | "no",
-      hasLabResults: data.hasLabResults === true,
-      totalCholesterol: normalizeCholesterol(data.totalCholesterol),
-      hdlCholesterol: normalizeCholesterol(data.hdlCholesterol),
-      ldlCholesterol: normalizeCholesterol(data.ldlCholesterol),
-      triglycerides: normalizeCholesterol(data.triglycerides),
-      hasDiabetes: data.hasDiabetes as "yes" | "no",
-      glucoseOrA1c: data.glucoseOrA1c || undefined,
-      smokingStatus: data.smokingStatus as "never" | "former" | "current",
-      heightCm: data.heightCm ? parseFloat(data.heightCm) : undefined,
-      weightKg: data.weightKg ? parseFloat(data.weightKg) : undefined,
-      bmi: data.bmi || undefined,
-      familyHistoryPrematureCvd: data.familyHistoryPrematureCvd || undefined,
-      physicalActivity: data.physicalActivity || undefined,
-      alcoholIntake: data.alcoholIntake || undefined,
-    };
-
-    return { patient, validation: { errors, warnings } };
   } catch (error) {
-    errors.push(`Validation error: ${error instanceof Error ? error.message : "Unknown error"}`);
-    return { patient: null, validation: { errors, warnings } };
+    return {
+      patient: null,
+      validation: {
+        errors: [
+          error instanceof Error ? error.message : "Failed to normalize patient data",
+        ],
+        warnings: [],
+      },
+    };
   }
 }
 
