@@ -1,0 +1,25 @@
+import type { FormData } from "@/app/types/assessment";
+
+export const samplePatientData: FormData = {
+  age: "45",
+  sexAtBirth: "male",
+  raceEthnicity: "white",
+  systolicBp: "145",
+  diastolicBp: "92",
+  onBpMeds: "yes",
+  hasLabResults: true,
+  cholesterolUnit: "mgdL",
+  totalCholesterol: "220",
+  hdlCholesterol: "42",
+  ldlCholesterol: "150",
+  triglycerides: "180",
+  hasDiabetes: "no",
+  glucoseOrA1c: "",
+  smokingStatus: "current",
+  heightCm: "175",
+  weightKg: "85",
+  bmi: 27.8,
+  familyHistoryPrematureCvd: "yes",
+  physicalActivity: "1-3",
+  alcoholIntake: "moderate",
+};
