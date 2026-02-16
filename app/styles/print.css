@@ -1,0 +1,70 @@
+/* Print stylesheet for PDF generation */
+@media print {
+  @page {
+    margin: 1.5cm;
+    size: A4;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  /* Hide interactive elements */
+  .no-print,
+  button,
+  input,
+  select {
+    display: none !important;
+  }
+
+  /* Show print-only elements */
+  .print-footer {
+    display: block !important;
+  }
+
+  /* Remove fixed positioning */
+  .fixed {
+    position: static !important;
+  }
+
+  /* Remove shadows and effects */
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  /* Remove gradients */
+  [class*="gradient"] {
+    background: white !important;
+  }
+
+  /* Page breaks */
+  .print-break-after {
+    page-break-after: always;
+  }
+
+  .print-break-inside-avoid {
+    page-break-inside: avoid;
+  }
+
+  /* Ensure readability */
+  h1, h2, h3, h4, h5, h6 {
+    color: black !important;
+    page-break-after: avoid;
+  }
+
+  p, li, span {
+    color: #1e293b !important;
+  }
+
+  /* Light backgrounds for print */
+  .bg-sky-50,
+  .bg-emerald-50,
+  .bg-yellow-50,
+  .bg-orange-50,
+  .bg-rose-50,
+  .bg-slate-50 {
+    background: #f8fafc !important;
+  }
+}
