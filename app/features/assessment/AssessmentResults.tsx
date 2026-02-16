@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { ResultsLayout } from "@/app/components/layouts/ResultsLayout";
 import { Slider } from "@/app/components/ui/Slider";
 import { Toggle } from "@/app/components/ui/Toggle";
+import { PrintButton } from "@/app/components/ui/PrintButton";
 import type { FormData } from "@/app/types/assessment";
 
 export type RiskResult = {
@@ -191,7 +192,7 @@ export function AssessmentResults({
   return (
     <ResultsLayout
       footer={
-        <footer className="flex items-center justify-center px-8 py-6 lg:px-12 lg:py-8">
+        <footer className="flex items-center justify-center px-8 py-6 lg:px-12 lg:py-8 no-print">
           <button
             type="button"
             onClick={onReset}
@@ -205,12 +206,19 @@ export function AssessmentResults({
       <div className="space-y-10">
         {/* Header */}
         <div className="border-b border-slate-200 pb-8">
-          <h1 className="text-4xl font-bold text-slate-900 lg:text-5xl">
-            Assessment Results
-          </h1>
-          <p className="mt-4 text-lg text-slate-600">
-            Your cardiovascular risk analysis based on validated clinical models
-          </p>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h1 className="text-4xl font-bold text-slate-900 lg:text-5xl">
+                Assessment Results
+              </h1>
+              <p className="mt-4 text-lg text-slate-600">
+                Your cardiovascular risk analysis based on validated clinical models
+              </p>
+            </div>
+            <div className="flex gap-3 no-print">
+              <PrintButton />
+            </div>
+          </div>
         </div>
 
         {/* Warnings */}
@@ -237,7 +245,7 @@ export function AssessmentResults({
 
         {/* What-If Scenarios */}
         {hasWhatIfData && (
-          <div className="rounded-lg border-2 border-sky-200 bg-gradient-to-br from-sky-50 to-blue-50 p-8">
+          <div className="rounded-lg border-2 border-sky-200 bg-gradient-to-br from-sky-50 to-blue-50 p-8 no-print">
             <div className="mb-6">
               <h2 className="text-2xl font-semibold text-slate-900 mb-2 lg:text-3xl">
                 What-If Scenarios
@@ -322,7 +330,7 @@ export function AssessmentResults({
                 return (
                   <div
                     key={risk.id}
-                    className={`rounded-lg border-2 ${config.border} ${config.bg} overflow-hidden`}
+                    className={`rounded-lg border-2 ${config.border} ${config.bg} overflow-hidden print-break-inside-avoid`}
                   >
                     <div className="p-8">
                       {/* Header */}
@@ -461,7 +469,7 @@ export function AssessmentResults({
         </div>
 
         {/* Disclaimer */}
-        <div className="rounded-lg border border-slate-200 bg-slate-50 px-8 py-6">
+        <div className="rounded-lg border border-slate-200 bg-slate-50 px-8 py-6 print-break-inside-avoid">
           <div className="flex items-start gap-4">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-200 text-slate-600 text-base font-semibold">
               i
@@ -474,6 +482,12 @@ export function AssessmentResults({
               </p>
             </div>
           </div>
+        </div>
+        
+        {/* Print footer - only visible when printing */}
+        <div className="hidden print-footer mt-8 pt-4 border-t border-slate-300 text-xs text-slate-500">
+          <p>Generated on {new Date().toLocaleString()}</p>
+          <p className="mt-1">CardioRisk - Cardiovascular Risk Prediction System</p>
         </div>
       </div>
     </ResultsLayout>
