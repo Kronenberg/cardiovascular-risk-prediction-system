@@ -152,6 +152,7 @@ app/
    - API routes are thin controllers that delegate to services
    - Business logic lives in service classes
    - Domain calculations are pure functions
+   - **Frontend**: Container/Presentational pattern separates logic from UI
 
 2. **Error Handling**
    - Custom error classes (`ValidationError`, `RiskCalculationError`)
@@ -162,16 +163,19 @@ app/
    - Full TypeScript coverage
    - Strong typing throughout the stack
    - Type-safe service interfaces
+   - Shared types in `features/*/types/` for container/presentational communication
 
 4. **Testability**
    - Services are easily unit testable
    - Pure functions for calculations
    - Dependency injection ready
+   - **Frontend**: Presentational components are pure and easily testable
 
 5. **Maintainability**
    - Single Responsibility Principle
    - Clear service boundaries
    - Easy to extend with new risk models
+   - **Frontend**: Clear separation between containers (logic) and presentational (UI)
 
 ### Frontend Architecture
 
@@ -195,17 +199,28 @@ app/
 │
 ├── features/
 │   └── assessment/
-│       ├── AssessmentForm.tsx          # Main form component
-│       ├── AssessmentResults.tsx       # Results display
-│       └── sections/                  # Form sections
-│           ├── SectionDemographics.tsx
-│           ├── SectionVitals.tsx
-│           ├── SectionLipids.tsx
-│           ├── SectionMetabolic.tsx
-│           ├── SectionSmoking.tsx
-│           ├── SectionBodyComposition.tsx
-│           ├── SectionFamilyHistory.tsx
-│           └── SectionLifestyle.tsx
+│       ├── containers/                 # Container components (logic)
+│       │   ├── AssessmentFormContainer.tsx
+│       │   ├── AssessmentResultsContainer.tsx
+│       │   └── index.ts
+│       ├── presentational/            # Presentational components (UI)
+│       │   ├── AssessmentFormView.tsx
+│       │   ├── AssessmentResultsView.tsx
+│       │   └── index.ts
+│       ├── types/                     # Feature-specific types
+│       │   ├── results.ts
+│       │   └── index.ts
+│       ├── sections/                  # Form sections
+│       │   ├── SectionDemographics.tsx
+│       │   ├── SectionVitals.tsx
+│       │   ├── SectionLipids.tsx
+│       │   ├── SectionMetabolic.tsx
+│       │   ├── SectionSmoking.tsx
+│       │   ├── SectionBodyComposition.tsx
+│       │   ├── SectionFamilyHistory.tsx
+│       │   └── SectionLifestyle.tsx
+│       ├── AssessmentForm.tsx          # Legacy export (backward compat)
+│       └── AssessmentResults.tsx      # Legacy export (backward compat)
 │
 ├── hooks/
 │   └── useAssessment.ts               # React Query hooks
@@ -213,8 +228,10 @@ app/
 ├── providers/
 │   └── QueryProvider.tsx               # React Query provider
 │
+├── page.tsx                            # Home page (uses AssessmentFormContainer)
+│
 ├── results/
-│   └── page.tsx                        # Results page
+│   └── page.tsx                        # Results page (uses AssessmentResultsContainer)
 │
 ├── types/
 │   └── assessment.ts                   # TypeScript types
@@ -235,10 +252,29 @@ app/
 - Each feature has its own components, types, and logic
 - Promotes maintainability and scalability
 
-#### 2. **Layered Architecture**
+#### 2. **Container/Presentational Pattern**
+The frontend follows the **Container/Presentational** architecture pattern:
+
+- **Containers** (`containers/`): Handle logic, state management, data fetching, and side effects
+  - `AssessmentFormContainer`: Manages form state, validation, submission, navigation
+  - `AssessmentResultsContainer`: Handles URL parsing, what-if scenarios, recomputation
+
+- **Presentational Components** (`presentational/`): Pure UI components that receive props and render
+  - `AssessmentFormView`: Renders form UI based on props
+  - `AssessmentResultsView`: Renders results UI based on props
+
+**Benefits:**
+- Clear separation of concerns (logic vs. presentation)
+- Easier testing (presentational components are pure functions)
+- Better reusability (presentational components can be reused with different data sources)
+- Improved maintainability (changes to logic don't affect UI and vice versa)
+
+#### 3. **Layered Architecture**
 ```
 ┌─────────────────────────────────────┐
 │   Presentation Layer (Components)   │
+│   ├── Containers (Logic/State)     │
+│   └── Presentational (UI)           │
 ├─────────────────────────────────────┤
 │   Feature Layer (UI Logic)          │
 ├─────────────────────────────────────┤
@@ -250,18 +286,23 @@ app/
 └─────────────────────────────────────┘
 ```
 
-#### 3. **Data Flow**
+#### 4. **Data Flow**
 ```
-User Input → Client Validation → API Route → 
+User Input → Container (State) → Presentational (UI) → 
+User Interaction → Container (Handler) → 
+Client Validation → API Route → 
 Input Validation → Normalization Service → 
 Risk Assessment Service → Warning Detection → 
-Results Display → What-If Recalculation
+Container (State Update) → Presentational (Re-render) → 
+What-If Scenarios → Container (Recomputation) → 
+Presentational (Updated Results)
 ```
 
-#### 4. **State Management**
-- **Local State**: React `useState` for form data
-- **Server State**: React Query for API calls
-- **URL State**: Query parameters for results page
+#### 5. **State Management**
+- **Local State**: React `useState` in containers for form data and UI state
+- **Server State**: React Query for API calls (handled in containers)
+- **URL State**: Query parameters for results page (parsed in containers)
+- **What-If State**: Managed in `AssessmentResultsContainer` for scenario calculations
 
 ## 🚀 Getting Started
 
@@ -388,15 +429,27 @@ Risks recalculate automatically after 500ms of inactivity.
 
 #### Frontend
 
-- **Form Component**: `app/features/assessment/AssessmentForm.tsx`
+- **Form Container**: `app/features/assessment/containers/AssessmentFormContainer.tsx`
   - Multi-step form state management
   - Progressive disclosure logic
   - Validation orchestration
+  - Form submission and navigation
 
-- **Results Component**: `app/features/assessment/AssessmentResults.tsx`
-  - Results display
+- **Form View**: `app/features/assessment/presentational/AssessmentFormView.tsx`
+  - Pure UI rendering
+  - Receives props from container
+  - No business logic
+
+- **Results Container**: `app/features/assessment/containers/AssessmentResultsContainer.tsx`
+  - URL parsing and state management
   - What-if scenario handling
+  - Recomputation logic
+  - Data fetching orchestration
+
+- **Results View**: `app/features/assessment/presentational/AssessmentResultsView.tsx`
+  - Results display UI
   - Interactive risk exploration
+  - Pure presentational component
 
 ### Backend Architecture Details
 
@@ -446,7 +499,7 @@ The backend uses a **service layer architecture** where:
 2. Export it from that module’s `index.ts` and call it from `evaluate.ts` in `evaluateRisks()`.
 3. Update `RiskAssessmentService` if needed (it already uses `evaluateRisks()`).
 4. Update types in `app/types/assessment.ts` if needed.
-5. Add display logic and labels in `AssessmentResults.tsx` (e.g. `riskTypeLabels`, `riskTypeIcons`).
+5. Add display logic and labels in `AssessmentResultsView.tsx` (e.g. `riskTypeLabels`, `riskTypeIcons`).
 
 ### Styling
 
