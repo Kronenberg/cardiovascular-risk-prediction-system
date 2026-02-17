@@ -473,6 +473,99 @@ Contributions welcome! Please ensure:
 - [Framingham Risk Score](https://www.framinghamheartstudy.org/)
 - [WHO CVD Risk Charts](https://www.who.int/cardiovascular_diseases/guidelines/Chart_predictions/en/)
 
+---
+
+## 📋 Home Assignment: Design Decisions & Documentation
+
+> This section documents design decisions, shortcuts taken, and stubs for reviewers of this home assignment.
+
+### Assignment Q&A
+
+#### Why this tech stack?
+- **Next.js 16**: App Router, server components, API routes in one codebase. Vercel deployment is straightforward.
+- **React Query**: Handles loading/error states for the predict API, caching, and what-if recomputation.
+- **Tailwind CSS**: Rapid UI development with a consistent design system; medical UI scales cleanly.
+- **TypeScript**: Type safety for patient data, risk models, and API contracts; catches errors early.
+
+#### How does the architecture support extensibility?
+- **Service layer**: New risk models are added in `risk-calculations.ts` and wired into `RiskAssessmentService`; API and UI stay unchanged.
+- **Feature-based frontend**: Assessment form and results are isolated; adding new features (e.g., PDF export) is localized.
+- **Validator pattern**: New fields or rules go into `patient-validator.ts` and `human-validation.ts` without touching business logic.
+
+#### Why no database?
+- Assignment scope favors a single-session flow. Results are encoded in the URL for sharing and bookmarking.
+- A real product would add auth + persistence; the current design does not block that.
+
+#### Why URL-encoded results?
+- Keeps the app stateless and avoids session storage.
+- Tradeoff: Very long URLs for complex results; in production we would store results server-side and link by ID.
+
+---
+
+### ⚠️ Shortcuts Taken (Time Constraints)
+
+| Area | Shortcut | What Would Be Done With More Time |
+|------|----------|-----------------------------------|
+| **ASCVD Risk** | Uses a **simplified proxy** formula, not the full ACC/AHA Pooled Cohort Equations | Implement the published Cox model with race/sex-specific coefficients, log-transformed variables, and baseline survival terms |
+| **Framingham** | **Not implemented** (mentioned in UI/docs) | Implement 10-year CHD risk with the published Framingham coefficients (log-age, log-TC, log-HDL, log-SBP, smoking, diabetes) |
+| **WHO CVD** | **Not implemented** (mentioned in UI/docs) | Implement lab-based or non-lab WHO model with regional calibration; or integrate with WHO risk chart lookup |
+| **Race in ASCVD** | Race/ethnicity is collected but **not used** in risk calculation | Use race in Pooled Cohort Equations (White vs African American coefficients); add guidance for Other/Asian/Hispanic |
+| **Unit Tests** | **No automated tests** | Add unit tests for risk calculations, validators, and normalization; integration tests for the predict API |
+| **PDF Export** | Listed in Future Enhancements only | Implement server-side PDF generation with results summary and disclaimer |
+| **Error Recovery** | Basic `alert()` for API errors | Toast/notification system and retry UI |
+| **Accessibility** | Basic ARIA and semantic HTML | Full WCAG 2.1 AA audit, keyboard navigation, screen reader testing |
+| **Mobile UX** | Responsive layout only | Touch-optimized controls, bottom sheets for forms, larger tap targets |
+
+---
+
+### 🔧 Stubs & Parts to Implement Differently
+
+#### 1. Risk calculation models (`app/lib/risk-calculations.ts`)
+
+- **ASCVD**: Current logic is a heuristic (age, sex, cholesterol ratio, BP, diabetes, smoking) that approximates risk bands. The real Pooled Cohort Equations use:
+  - Log-transformed age, total cholesterol, HDL
+  - Race-specific betas (White / African American)
+  - Sex-specific baseline survival
+  - Official formula: `1 - S₁₀^exp(ΣβᵢXᵢ - B̄)`
+
+- **Framingham 10-year CHD**: Stub. Would add:
+  - Sex-specific Cox model with published coefficients
+  - Formula: `1 - 0.88936^exp(ΣβX - 23.9802)` (men) and `1 - 0.95012^exp(ΣβX - 26.1931)` (women)
+
+- **WHO CVD**: Stub. Would add:
+  - Lab-based model (age, sex, smoking, SBP, diabetes, total cholesterol)
+  - Non-lab model (age, sex, smoking, SBP, BMI) for settings without lipids
+  - Region-specific calibration (21 WHO regions)
+
+#### 2. Data flow
+
+- **Results in URL**: Fine for demos; for production we would store results server-side and use short IDs.
+- **No rate limiting**: API has no throttling; would add rate limiting (e.g., per IP or per session).
+
+#### 3. Validation & normalization
+
+- **`normalizeAndValidate()`**: Deprecated and kept for compatibility. New code should call `PatientNormalizationService` and `WarningDetectionService` directly.
+- **Range validation**: Some numeric fields use soft limits; stricter clinical ranges could be enforced with references to guidelines.
+
+#### 4. Frontend
+
+- **What-if sliders**: Recompute on every change (with debounce). Could add “Compare to baseline” and confidence intervals if models support it.
+- **Print**: Uses `window.print()` with print CSS. A proper solution would generate a structured PDF with logos and disclaimers.
+
+---
+
+### ✅ What Is Production-Ready
+
+- Layered backend (API → services → domain)
+- Type-safe patient data flow
+- ACC/AHA-aligned BP categories
+- Clear separation of risk models from orchestration
+- Unit conversion (mg/dL ↔ mmol/L)
+- Progressive disclosure (Basic vs Advanced)
+- Professional medical UI with icons and typography
+
+---
+
 ## 🎯 Future Enhancements
 
 - [ ] Export results as PDF

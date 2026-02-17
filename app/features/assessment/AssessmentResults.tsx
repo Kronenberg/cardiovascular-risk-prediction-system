@@ -5,6 +5,21 @@ import { ResultsLayout } from "@/app/components/layouts/ResultsLayout";
 import { Slider } from "@/app/components/ui/Slider";
 import { Toggle } from "@/app/components/ui/Toggle";
 import { PrintButton } from "@/app/components/ui/PrintButton";
+import {
+  IconHeart,
+  IconActivity,
+  IconDroplet,
+  IconScale,
+  IconShieldCheck,
+  IconAlertTriangle,
+  IconAlertCircle,
+  IconXCircle,
+  IconClipboardList,
+  IconTrendingDown,
+  IconInfo,
+  IconFileText,
+  IconCigarette,
+} from "@/app/components/ui/MedicalIcons";
 import type { FormData } from "@/app/types/assessment";
 
 export type RiskResult = {
@@ -28,56 +43,57 @@ type AssessmentResultsProps = {
   results: ResultsData;
   onReset: () => void;
   originalFormData?: FormData | null;
-  onRecompute?: (formData: FormData) => void;
+  onRecompute?: (formData: FormData) => Promise<ResultsData>;
 };
 
 /* Muted medical palette: calm green (low), muted amber (medium), muted red (high) */
 const levelConfig = {
   Low: {
     label: "Low Risk",
-    color: "emerald",
-    icon: "✓",
     bg: "bg-emerald-50",
     border: "border-emerald-200",
-    text: "text-emerald-600",
     badge: "bg-emerald-100 text-emerald-700",
+    Icon: IconShieldCheck,
   },
   Borderline: {
     label: "Borderline",
-    color: "amber",
-    icon: "⚠",
     bg: "bg-amber-50",
     border: "border-amber-200",
-    text: "text-amber-700",
     badge: "bg-amber-100 text-amber-700",
+    Icon: IconAlertTriangle,
   },
   Intermediate: {
     label: "Intermediate Risk",
-    color: "amber",
-    icon: "⚡",
     bg: "bg-amber-50",
     border: "border-amber-200",
-    text: "text-amber-700",
     badge: "bg-amber-100 text-amber-700",
+    Icon: IconAlertTriangle,
   },
   High: {
     label: "High Risk",
-    color: "rose",
-    icon: "●",
     bg: "bg-rose-50",
     border: "border-rose-200",
-    text: "text-rose-600",
     badge: "bg-rose-100 text-rose-600",
+    Icon: IconAlertCircle,
   },
   Critical: {
     label: "Critical",
-    color: "red",
-    icon: "▲",
     bg: "bg-red-50",
     border: "border-red-200",
-    text: "text-red-600",
     badge: "bg-red-100 text-red-600",
+    Icon: IconXCircle,
   },
+};
+
+/* Risk type → medical icon mapping */
+const riskTypeIcons: Record<string, React.ComponentType<{ className?: string; size?: number }>> = {
+  ascvd_10yr: IconHeart,
+  bp_category: IconActivity,
+  diabetes: IconDroplet,
+  diabetes_risk: IconDroplet,
+  obesity: IconScale,
+  severe_obesity: IconScale,
+  relative_risk: IconHeart,
 };
 
 const riskTypeLabels: Record<string, string> = {
@@ -197,7 +213,7 @@ export function AssessmentResults({
           <button
             type="button"
             onClick={onReset}
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-sky-600 px-8 py-3 text-base font-semibold text-white shadow-sm transition hover:bg-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-sky-600 px-10 py-3.5 text-[length:var(--text-input)] font-semibold text-white shadow-md shadow-sky-200/50 transition hover:bg-sky-700 hover:shadow-sky-300/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2"
           >
             Start New Assessment
           </button>
@@ -208,15 +224,20 @@ export function AssessmentResults({
         {/* Header */}
         <div className="border-b border-slate-200 pb-8">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <h1 className="text-[length:var(--text-page-title)] font-semibold text-[#1a1a1a] lg:text-[length:var(--text-page-title-lg)]">
-                Assessment Results
-              </h1>
-              <p className="mt-4 text-base text-slate-600 max-w-[680px]">
-                Your cardiovascular risk analysis based on validated clinical models
-              </p>
+            <div className="flex gap-4">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-sky-50 text-sky-600 ring-1 ring-sky-100">
+                <IconFileText size={28} />
+              </div>
+              <div>
+                <h1 className="text-[length:var(--text-page-title)] font-semibold text-[#1a1a1a] lg:text-[length:var(--text-page-title-lg)]">
+                  Assessment Results
+                </h1>
+                <p className="mt-2 text-base text-slate-600 max-w-[680px] leading-relaxed">
+                  Your cardiovascular risk analysis based on validated clinical models (ASCVD, Framingham, WHO)
+                </p>
+              </div>
             </div>
-            <div className="flex gap-3 no-print">
+            <div className="flex gap-3 no-print shrink-0">
               <PrintButton />
             </div>
           </div>
@@ -224,17 +245,17 @@ export function AssessmentResults({
 
         {/* Warnings */}
         {safeResults.warnings && safeResults.warnings.length > 0 && (
-          <div className="rounded-lg border border-amber-200 bg-amber-50 px-8 py-6">
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-6 py-5">
             <div className="flex items-start gap-4">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-700 text-[length:var(--text-section)] font-semibold tabular-nums">
-                ⚠
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
+                <IconAlertTriangle size={22} />
               </div>
-              <div className="flex-1">
-                <h3 className="text-[length:var(--text-section)] font-semibold text-amber-900 mb-3">Important Notes</h3>
-                <ul className="space-y-2 text-base text-amber-800">
+              <div className="flex-1 min-w-0">
+                <h3 className="text-[length:var(--text-section)] font-semibold text-amber-900 mb-2">Important Notes</h3>
+                <ul className="space-y-2 text-base text-amber-800 leading-relaxed">
                   {safeResults.warnings.map((warning, idx) => (
-                    <li key={idx} className="flex items-start gap-3">
-                      <span className="text-amber-600 mt-1">•</span>
+                    <li key={idx} className="flex items-start gap-2">
+                      <span className="text-amber-500 mt-1.5 shrink-0">•</span>
                       <span>{warning}</span>
                     </li>
                   ))}
@@ -246,14 +267,19 @@ export function AssessmentResults({
 
         {/* What-If Scenarios */}
         {hasWhatIfData && (
-          <div className="rounded-lg border-2 border-sky-200 bg-gradient-to-br from-sky-50 to-blue-50 p-8 no-print">
-            <div className="mb-6">
-              <h2 className="text-[length:var(--text-page-title)] font-semibold text-[#1a1a1a] mb-2 lg:text-[length:var(--text-page-title-lg)]">
-                What-If Scenarios
-              </h2>
-              <p className="text-base text-slate-600">
-                Adjust these factors to see how they impact your cardiovascular risk in real-time.
-              </p>
+          <div className="rounded-xl border border-sky-200 bg-gradient-to-br from-sky-50/80 to-blue-50/80 p-8 no-print ring-1 ring-sky-100">
+            <div className="mb-6 flex items-center gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-sky-100 text-sky-600">
+                <IconTrendingDown size={22} className="text-sky-600" />
+              </div>
+              <div>
+                <h2 className="text-[length:var(--text-page-title)] font-semibold text-[#1a1a1a] lg:text-[length:var(--text-page-title-lg)]">
+                  What-If Scenarios
+                </h2>
+                <p className="text-[length:var(--text-helper)] text-slate-500 mt-0.5">
+                  Adjust factors to see how they impact your cardiovascular risk in real-time.
+                </p>
+              </div>
             </div>
             
             {isRecomputing && (
@@ -265,10 +291,15 @@ export function AssessmentResults({
 
             <div className="grid gap-6 md:grid-cols-3">
               {/* Smoking Toggle */}
-              <div className="rounded-lg border border-sky-200 bg-white p-5">
-                <label className="text-[length:var(--text-label)] font-medium text-[#1a1a1a] mb-3 block">
-                  Smoking Status
-                </label>
+              <div className="rounded-xl border border-sky-200 bg-white p-5 shadow-sm ring-1 ring-slate-100">
+                <div className="mb-3 flex items-center gap-2">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-rose-50 text-rose-600">
+                    <IconCigarette size={18} />
+                  </div>
+                  <label className="text-[length:var(--text-label)] font-medium text-[#1a1a1a]">
+                    Smoking Status
+                  </label>
+                </div>
                 <Toggle
                   labelOn="Current Smoker"
                   labelOff="Non-Smoker"
@@ -283,9 +314,17 @@ export function AssessmentResults({
               </div>
 
               {/* SBP Slider */}
-              <div className="rounded-lg border border-sky-200 bg-white p-5">
+              <div className="rounded-xl border border-sky-200 bg-white p-5 shadow-sm ring-1 ring-slate-100">
+                <div className="mb-3 flex items-center gap-2">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-sky-50 text-sky-600">
+                    <IconActivity size={18} />
+                  </div>
+                  <label className="text-[length:var(--text-label)] font-medium text-[#1a1a1a]">
+                    Systolic BP
+                  </label>
+                </div>
                 <Slider
-                  label="Systolic Blood Pressure"
+                  label=""
                   value={parseFloat(currentSbp)}
                   min={80}
                   max={200}
@@ -296,9 +335,17 @@ export function AssessmentResults({
               </div>
 
               {/* Weight Slider */}
-              <div className="rounded-lg border border-sky-200 bg-white p-5">
+              <div className="rounded-xl border border-sky-200 bg-white p-5 shadow-sm ring-1 ring-slate-100">
+                <div className="mb-3 flex items-center gap-2">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
+                    <IconScale size={18} />
+                  </div>
+                  <label className="text-[length:var(--text-label)] font-medium text-[#1a1a1a]">
+                    Weight
+                  </label>
+                </div>
                 <Slider
-                  label="Weight"
+                  label=""
                   value={parseFloat(currentWeight)}
                   min={40}
                   max={150}
@@ -318,38 +365,52 @@ export function AssessmentResults({
 
         {/* Top 3 Risks */}
         <div>
-          <h2 className="text-[length:var(--text-page-title)] font-semibold text-[#1a1a1a] mb-8 lg:text-[length:var(--text-page-title-lg)]">
-            Top 3 Risk Factors
-          </h2>
+          <div className="mb-8 flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-sky-50 text-sky-600">
+              <IconClipboardList size={22} />
+            </div>
+            <div>
+              <h2 className="text-[length:var(--text-page-title)] font-semibold text-[#1a1a1a] lg:text-[length:var(--text-page-title-lg)]">
+                Top 3 Risk Factors
+              </h2>
+              <p className="text-[length:var(--text-helper)] text-slate-500 mt-0.5">
+                Ranked by clinical significance
+              </p>
+            </div>
+          </div>
           
           <div className="space-y-6">
             {safeResults.top3 && safeResults.top3.length > 0 ? (
               safeResults.top3.map((risk, index) => {
                 const config = levelConfig[risk.level];
                 const riskLabel = riskTypeLabels[risk.id] || risk.title;
+                const RiskTypeIcon = riskTypeIcons[risk.id] || IconHeart;
+                const LevelIcon = config.Icon;
                 
                 return (
                   <div
                     key={risk.id}
-                    className={`rounded-lg border-2 ${config.border} ${config.bg} overflow-hidden print-break-inside-avoid`}
+                    className={`rounded-xl border-2 ${config.border} ${config.bg} overflow-hidden print-break-inside-avoid shadow-sm`}
                   >
-                    <div className="p-8">
+                    <div className="p-6 lg:p-8">
                       {/* Header */}
-                      <div className="flex items-start justify-between gap-6 mb-8">
-                        <div className="flex items-start gap-5 flex-1">
-                          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-white border-2 border-slate-300 font-bold text-[length:var(--text-section)] text-[#1a1a1a] shadow-sm tabular-nums">
-                            {index + 1}
+                      <div className="flex items-start gap-5 mb-6">
+                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-700 shadow-sm">
+                          <RiskTypeIcon size={28} className="text-sky-600" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-3 mb-2">
+                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-200 text-slate-700 text-xs font-bold tabular-nums">
+                              {index + 1}
+                            </span>
+                            <h3 className="text-[length:var(--text-section)] font-semibold text-[#1a1a1a] lg:text-[length:var(--text-section-lg)]">
+                              {risk.title}
+                            </h3>
+                            <span className={`inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-[length:var(--text-label)] font-semibold ${config.badge}`}>
+                              <LevelIcon size={16} />
+                              {config.label}
+                            </span>
                           </div>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-4 mb-3">
-                              <h3 className="text-[length:var(--text-section)] font-semibold text-[#1a1a1a] lg:text-[length:var(--text-section-lg)]">
-                                {risk.title}
-                              </h3>
-                              <span className={`inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold ${config.badge}`}>
-                                <span>{config.icon}</span>
-                                {config.label}
-                              </span>
-                            </div>
                             {risk.value && (
                               <div className="space-y-1">
                                 {(risk.value.riskPercent !== undefined && risk.value.validated !== false) && (
@@ -377,15 +438,14 @@ export function AssessmentResults({
                                 )}
                               </div>
                             )}
-                          </div>
                         </div>
                       </div>
 
                       {/* Warnings (if any) */}
                       {risk.warnings && risk.warnings.length > 0 && (
-                        <div className="mb-6 rounded-lg border-2 border-orange-200 bg-orange-50/50 p-5">
+                        <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50/80 p-5">
                           <h4 className="text-[length:var(--text-input)] font-semibold text-amber-900 mb-3 flex items-center gap-2">
-                            <span>⚠️</span>
+                            <IconAlertTriangle size={18} className="text-amber-600 shrink-0" />
                             Important Note
                           </h4>
                           <ul className="space-y-2">
@@ -401,7 +461,8 @@ export function AssessmentResults({
 
                       {/* Why we think this (Top 3 drivers) */}
                       <div className="mb-8">
-                        <h4 className="text-[length:var(--text-section)] font-semibold text-[#1a1a1a] mb-4">
+                        <h4 className="text-[length:var(--text-section)] font-semibold text-[#1a1a1a] mb-4 flex items-center gap-2">
+                          <IconClipboardList size={20} className="text-slate-500" />
                           Why we think this
                         </h4>
                         <p className="text-[length:var(--text-helper)] text-slate-600 mb-4">
@@ -426,8 +487,9 @@ export function AssessmentResults({
 
                       {/* What would reduce it (2-3 actions) */}
                       {risk.actions && risk.actions.length > 0 && (
-                        <div className="rounded-lg border border-slate-200 bg-slate-50 p-6">
-                          <h4 className="text-[length:var(--text-section)] font-semibold text-[#1a1a1a] mb-4">
+                        <div className="rounded-xl border border-slate-200 bg-white p-6 ring-1 ring-slate-100">
+                          <h4 className="text-[length:var(--text-section)] font-semibold text-[#1a1a1a] mb-4 flex items-center gap-2">
+                            <IconTrendingDown size={20} className="text-emerald-600" />
                             What would reduce it
                           </h4>
                           <p className="text-[length:var(--text-helper)] text-slate-600 mb-4">
@@ -437,9 +499,9 @@ export function AssessmentResults({
                           </p>
                           <ul className="space-y-3">
                             {risk.actions.slice(0, 3).map((action, idx) => (
-                              <li key={idx} className="flex items-start gap-4 text-base text-slate-700">
-                                <span className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 text-sm font-semibold">
-                                  ✓
+                              <li key={idx} className="flex items-start gap-3 text-base text-slate-700">
+                                <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+                                  <IconShieldCheck size={14} />
                                 </span>
                                 <span className="leading-relaxed">{action}</span>
                               </li>
@@ -477,10 +539,10 @@ export function AssessmentResults({
         </div>
 
         {/* Disclaimer */}
-        <div className="rounded-lg border border-slate-200 bg-slate-50 px-8 py-6 print-break-inside-avoid">
+        <div className="rounded-xl border border-slate-200 bg-slate-50 px-6 py-5 print-break-inside-avoid">
           <div className="flex items-start gap-4">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-200 text-slate-600 text-base font-semibold">
-              i
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
+              <IconInfo size={22} />
             </div>
             <div>
               <p className="text-[length:var(--text-input)] font-semibold text-[#1a1a1a] mb-2">Disclaimer</p>
