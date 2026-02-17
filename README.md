@@ -118,9 +118,32 @@ app/
 │   │   ├── risk-assessment.service.ts
 │   │   └── warning-detection.service.ts
 │   │
-│   ├── risk-calculations.ts            # Core domain logic
-│   ├── validation.ts                   # Type definitions
-│   └── unit-conversion.ts              # Utility functions
+│   ├── risk-calculations/              # Core domain logic (risk models)
+│   │   ├── index.ts                    # Public API (evaluateRisks, rankTop3, types)
+│   │   ├── types.ts                    # RiskCandidate, ValidationResult, RiskLevel
+│   │   ├── evaluate.ts                 # Orchestrator; wires all calculators
+│   │   ├── legacy.ts                   # Deprecated normalizeAndValidate()
+│   │   ├── models/                     # BP, diabetes, obesity, relative risk
+│   │   │   ├── bp-risk.ts
+│   │   │   ├── diabetes-risk.ts
+│   │   │   ├── obesity-risk.ts
+│   │   │   └── relative-risk.ts
+│   │   ├── ascvd/                      # Pooled Cohort Equations (2013 ACC/AHA)
+│   │   │   ├── index.ts
+│   │   │   ├── constants.ts
+│   │   │   └── calculator.ts
+│   │   ├── framingham/                 # 10-year CHD (D'Agostino 2008)
+│   │   │   ├── index.ts
+│   │   │   ├── constants.ts
+│   │   │   └── calculator.ts
+│   │   └── who/                        # WHO CVD, lab/non-lab, 21 regions
+│   │       ├── index.ts
+│   │       ├── types.ts
+│   │       ├── constants.ts
+│   │       └── calculator.ts
+│   │
+│   ├── validation.ts                   # Type definitions (NormalizedPatient)
+│   └── unit-conversion.ts              # mg/dL ↔ mmol/L utilities
 ```
 
 #### Key Architectural Principles
@@ -353,7 +376,7 @@ Risks recalculate automatically after 500ms of inactivity.
   - Field-level validation rules
   - Comprehensive validation pipeline
 
-- **Domain Logic**: `app/lib/risk-calculations.ts`
+- **Domain Logic**: `app/lib/risk-calculations/` (index, models, ascvd, framingham, who)
   - Core risk calculation algorithms
   - ASCVD, BP, Diabetes, Obesity models
   - Risk ranking and scoring
@@ -397,7 +420,7 @@ The backend uses a **service layer architecture** where:
    - Type checking
    - Range validation
 
-4. **Domain Layer** (`app/lib/risk-calculations.ts`) contains:
+4. **Domain Layer** (`app/lib/risk-calculations/`) contains:
    - Pure calculation functions
    - Risk model implementations
    - Ranking algorithms
@@ -419,11 +442,11 @@ The backend uses a **service layer architecture** where:
 
 ### Adding New Risk Models
 
-1. Add calculation function in `app/lib/risk-calculations.ts`
-2. Add to `evaluateRisks()` function in `risk-calculations.ts`
-3. Update `RiskAssessmentService` if needed
-4. Update types in `app/types/assessment.ts` if needed
-5. Add display logic in `AssessmentResults.tsx`
+1. Add a new calculator under `app/lib/risk-calculations/` (e.g. a new folder like `ascvd/` or a file in `models/`), with constants and calculator logic.
+2. Export it from that module’s `index.ts` and call it from `evaluate.ts` in `evaluateRisks()`.
+3. Update `RiskAssessmentService` if needed (it already uses `evaluateRisks()`).
+4. Update types in `app/types/assessment.ts` if needed.
+5. Add display logic and labels in `AssessmentResults.tsx` (e.g. `riskTypeLabels`, `riskTypeIcons`).
 
 ### Styling
 
@@ -488,7 +511,7 @@ Contributions welcome! Please ensure:
 - **TypeScript**: Type safety for patient data, risk models, and API contracts; catches errors early.
 
 #### How does the architecture support extensibility?
-- **Service layer**: New risk models are added in `risk-calculations.ts` and wired into `RiskAssessmentService`; API and UI stay unchanged.
+- **Service layer**: New risk models are added in the `risk-calculations/` module (e.g. new calculator + wiring in `evaluate.ts`) and used by `RiskAssessmentService`; API and UI stay unchanged.
 - **Feature-based frontend**: Assessment form and results are isolated; adding new features (e.g., PDF export) is localized.
 - **Validator pattern**: New fields or rules go into `patient-validator.ts` and `human-validation.ts` without touching business logic.
 
@@ -504,38 +527,33 @@ Contributions welcome! Please ensure:
 
 ### ⚠️ Shortcuts Taken (Time Constraints)
 
-| Area | Shortcut | What Would Be Done With More Time |
-|------|----------|-----------------------------------|
-| **ASCVD Risk** | **Implemented (simplified)** — `calculateAscvdRisk()` uses Pooled Cohort variables (age, sex, TC, HDL, SBP, BP meds, diabetes, smoking) and ACC/AHA risk bands (<5%, 5–7.4%, 7.5–19.9%, ≥20%). Uses heuristic weights, not the published Cox coefficients | Implement the full Pooled Cohort Equations: race/sex-specific coefficients, log-transformed variables, and baseline survival terms |
-| **Framingham** | **Not a separate model** — no `calculateFraminghamRisk()`. The ASCVD-style calculation uses the same risk factor set (age, sex, lipids, BP, diabetes, smoking), so outputs are conceptually aligned | Add a dedicated Framingham 10-year CHD function with published coefficients (log-age, log-TC, log-HDL, log-SBP, smoking, diabetes) |
-| **WHO CVD** | **Not a separate model** — no `calculateWhoCvdRisk()`. Same variable overlap; ASCVD-style model covers WHO lab-based inputs | Add a dedicated WHO model with lab-based or non-lab equations and regional calibration (21 WHO regions) |
-| **Race in ASCVD** | Race/ethnicity is collected but **not used** in risk calculation | Use race in Pooled Cohort Equations (White vs African American coefficients); add guidance for Other/Asian/Hispanic |
-| **Unit Tests** | **No automated tests** | Add unit tests for risk calculations, validators, and normalization; integration tests for the predict API |
-| **PDF Export** | Listed in Future Enhancements only | Implement server-side PDF generation with results summary and disclaimer |
-| **Error Recovery** | Basic `alert()` for API errors | Toast/notification system and retry UI |
-| **Accessibility** | Basic ARIA and semantic HTML | Full WCAG 2.1 AA audit, keyboard navigation, screen reader testing |
-| **Mobile UX** | Responsive layout only | Touch-optimized controls, bottom sheets for forms, larger tap targets |
+| Area | Status | Notes |
+|------|--------|--------|
+| **ASCVD Risk** | **Implemented** | Full Pooled Cohort Equations in `risk-calculations/ascvd/`: race/sex-specific coefficients (White/African American), log-transformed age, TC, HDL, SBP; baseline survival; formula `1 - S₁₀^exp(ΣβᵢXᵢ - B̄)`. ACC/AHA risk bands (<5%, 5–7.4%, 7.5–19.9%, ≥20%). |
+| **Framingham** | **Implemented** | Dedicated `calculateFraminghamRisk()` in `risk-calculations/framingham/`: 10-year CHD, D'Agostino 2008 coefficients, sex-specific baseline (0.88936 / 0.95012) and mean linear predictor; log-age, log-TC, log-HDL, log-SBP, smoking, diabetes. |
+| **WHO CVD** | **Implemented** | Dedicated `calculateWhoCvdRisk()` in `risk-calculations/who/`: lab-based (age, sex, SBP, TC, smoking, diabetes) and non-lab (age, sex, SBP, BMI, smoking); 21 GBD regions with calibration; CHD + stroke combined risk. |
+| **Race in ASCVD** | **Implemented** | Race/ethnicity used in PCE: White vs African American coefficients; Other/Asian/Hispanic use White coefficients per guideline guidance. |
+| **Unit Tests** | **Not yet** | No automated tests for risk calculations, validators, or normalization; no integration tests for the predict API. |
+| **PDF Export** | Listed in Future Enhancements only | Implement server-side PDF generation with results summary and disclaimer. |
+| **Error Recovery** | Basic `alert()` for API errors | Toast/notification system and retry UI. |
+| **Accessibility** | Basic ARIA and semantic HTML | Full WCAG 2.1 AA audit, keyboard navigation, screen reader testing. |
+| **Mobile UX** | Responsive layout only | Touch-optimized controls, bottom sheets for forms, larger tap targets. |
 
 ---
 
 ### 🔧 Stubs & Parts to Implement Differently
 
-#### 1. Risk calculation models (`app/lib/risk-calculations.ts`)
+#### 1. Risk calculation models (`app/lib/risk-calculations/`)
 
-- **ASCVD**: Implemented in `calculateAscvdRisk()` with Pooled Cohort variables and ACC/AHA risk bands. Uses heuristic weights instead of the published Cox model. Full implementation would add:
-  - Log-transformed age, total cholesterol, HDL
-  - Race-specific betas (White / African American)
-  - Sex-specific baseline survival
-  - Official formula: `1 - S₁₀^exp(ΣβᵢXᵢ - B̄)`
+Risk logic is split into a dedicated module with one folder per model:
 
-- **Framingham 10-year CHD**: Not implemented as a separate function. Would add:
-  - Dedicated `calculateFraminghamRisk()` with sex-specific Cox model
-  - Published coefficients and formula: `1 - 0.88936^exp(ΣβX - 23.9802)` (men) and `1 - 0.95012^exp(ΣβX - 26.1931)` (women)
+- **ASCVD** (`ascvd/`): Full Pooled Cohort Equations (2013 ACC/AHA). `calculateAscvdRisk()` uses race/sex-specific coefficients (White / African American), log-transformed age, TC, HDL, SBP, baseline survival, and the official formula `1 - S₁₀^exp(ΣβᵢXᵢ - B̄)`. Valid for age 40–79 with lab results.
 
-- **WHO CVD**: Not implemented as a separate function. Would add:
-  - Dedicated `calculateWhoCvdRisk()` with lab-based model (age, sex, smoking, SBP, diabetes, total cholesterol)
-  - Non-lab model (age, sex, smoking, SBP, BMI) for settings without lipids
-  - Region-specific calibration (21 WHO regions)
+- **Framingham 10-year CHD** (`framingham/`): Dedicated `calculateFraminghamRisk()` with sex-specific Cox model, published coefficients (D'Agostino 2008), and formula `1 - S₀^exp(ΣβX - B̄)` (S₀ = 0.88936 men, 0.95012 women). Valid for age 30–74 with lipids.
+
+- **WHO CVD** (`who/`): Dedicated `calculateWhoCvdRisk()` with lab-based model (age, sex, SBP, TC, smoking, diabetes) and non-lab model (age, sex, SBP, BMI, smoking); 21 GBD regions with calibration; CHD and stroke combined. Valid for age 40–80.
+
+- **Other**: BP category, diabetes risk, obesity, and relative risk (for age &lt; 40) live under `models/`. Orchestration is in `evaluate.ts`; public API is `index.ts`.
 
 #### 2. Data flow
 
