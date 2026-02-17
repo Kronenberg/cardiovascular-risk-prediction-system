@@ -29,7 +29,7 @@ export function AssessmentLayout({
               <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-sky-100 text-base font-semibold">
                 CR
               </span>
-              <span className="text-base font-semibold tracking-wide">
+              <span className="text-base font-semibold tracking-wide text-[#1a1a1a]">
                 CardioRisk
               </span>
             </div>
@@ -40,10 +40,10 @@ export function AssessmentLayout({
             )}
             <div className="mt-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
               <div>
-                <h1 className="text-2xl font-semibold text-slate-900 lg:text-3xl">
+                <h1 className="text-[length:var(--text-page-title)] font-semibold text-[#1a1a1a] lg:text-[length:var(--text-page-title-lg)]">
                   Cardiovascular Risk Assessment
                 </h1>
-                <p className="mt-2 text-base text-slate-600">
+                <p className="mt-2 text-base text-slate-600 max-w-[680px]">
                   Based on validated clinical models including ASCVD, Framingham,
                   and WHO CVD risk charts.
                 </p>

@@ -31,7 +31,7 @@ export function RadioGroup<T extends string>({
             type="button"
             onClick={() => onChange(option.value)}
             className={[
-              "flex items-center justify-between gap-3 rounded-xl border px-4 py-3 text-left text-sm transition",
+              "flex items-center justify-between gap-3 rounded-xl border px-4 py-3 text-left text-[length:var(--text-input)] transition",
               checked
                 ? "border-sky-500 bg-sky-50 text-sky-800 shadow-sm"
                 : "border-slate-200 bg-white text-slate-700 hover:border-sky-200 hover:bg-sky-50/60",

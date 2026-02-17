@@ -31,6 +31,7 @@ type AssessmentResultsProps = {
   onRecompute?: (formData: FormData) => void;
 };
 
+/* Muted medical palette: calm green (low), muted amber (medium), muted red (high) */
 const levelConfig = {
   Low: {
     label: "Low Risk",
@@ -38,26 +39,26 @@ const levelConfig = {
     icon: "✓",
     bg: "bg-emerald-50",
     border: "border-emerald-200",
-    text: "text-emerald-700",
+    text: "text-emerald-600",
     badge: "bg-emerald-100 text-emerald-700",
   },
   Borderline: {
     label: "Borderline",
-    color: "yellow",
+    color: "amber",
     icon: "⚠",
-    bg: "bg-yellow-50",
-    border: "border-yellow-200",
-    text: "text-yellow-700",
-    badge: "bg-yellow-100 text-yellow-700",
+    bg: "bg-amber-50",
+    border: "border-amber-200",
+    text: "text-amber-700",
+    badge: "bg-amber-100 text-amber-700",
   },
   Intermediate: {
     label: "Intermediate Risk",
-    color: "orange",
+    color: "amber",
     icon: "⚡",
-    bg: "bg-orange-50",
-    border: "border-orange-200",
-    text: "text-orange-700",
-    badge: "bg-orange-100 text-orange-700",
+    bg: "bg-amber-50",
+    border: "border-amber-200",
+    text: "text-amber-700",
+    badge: "bg-amber-100 text-amber-700",
   },
   High: {
     label: "High Risk",
@@ -65,8 +66,8 @@ const levelConfig = {
     icon: "●",
     bg: "bg-rose-50",
     border: "border-rose-200",
-    text: "text-rose-700",
-    badge: "bg-rose-100 text-rose-700",
+    text: "text-rose-600",
+    badge: "bg-rose-100 text-rose-600",
   },
   Critical: {
     label: "Critical",
@@ -74,8 +75,8 @@ const levelConfig = {
     icon: "▲",
     bg: "bg-red-50",
     border: "border-red-200",
-    text: "text-red-700",
-    badge: "bg-red-100 text-red-700",
+    text: "text-red-600",
+    badge: "bg-red-100 text-red-600",
   },
 };
 
@@ -208,10 +209,10 @@ export function AssessmentResults({
         <div className="border-b border-slate-200 pb-8">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <h1 className="text-4xl font-bold text-slate-900 lg:text-5xl">
+              <h1 className="text-[length:var(--text-page-title)] font-semibold text-[#1a1a1a] lg:text-[length:var(--text-page-title-lg)]">
                 Assessment Results
               </h1>
-              <p className="mt-4 text-lg text-slate-600">
+              <p className="mt-4 text-base text-slate-600 max-w-[680px]">
                 Your cardiovascular risk analysis based on validated clinical models
               </p>
             </div>
@@ -223,17 +224,17 @@ export function AssessmentResults({
 
         {/* Warnings */}
         {safeResults.warnings && safeResults.warnings.length > 0 && (
-          <div className="rounded-lg border border-yellow-200 bg-yellow-50 px-8 py-6">
+          <div className="rounded-lg border border-amber-200 bg-amber-50 px-8 py-6">
             <div className="flex items-start gap-4">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-yellow-100 text-yellow-700 text-xl font-semibold">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-700 text-[length:var(--text-section)] font-semibold tabular-nums">
                 ⚠
               </div>
               <div className="flex-1">
-                <h3 className="text-lg font-semibold text-yellow-900 mb-3">Important Notes</h3>
-                <ul className="space-y-2 text-base text-yellow-800">
+                <h3 className="text-[length:var(--text-section)] font-semibold text-amber-900 mb-3">Important Notes</h3>
+                <ul className="space-y-2 text-base text-amber-800">
                   {safeResults.warnings.map((warning, idx) => (
                     <li key={idx} className="flex items-start gap-3">
-                      <span className="text-yellow-600 mt-1">•</span>
+                      <span className="text-amber-600 mt-1">•</span>
                       <span>{warning}</span>
                     </li>
                   ))}
@@ -247,7 +248,7 @@ export function AssessmentResults({
         {hasWhatIfData && (
           <div className="rounded-lg border-2 border-sky-200 bg-gradient-to-br from-sky-50 to-blue-50 p-8 no-print">
             <div className="mb-6">
-              <h2 className="text-2xl font-semibold text-slate-900 mb-2 lg:text-3xl">
+              <h2 className="text-[length:var(--text-page-title)] font-semibold text-[#1a1a1a] mb-2 lg:text-[length:var(--text-page-title-lg)]">
                 What-If Scenarios
               </h2>
               <p className="text-base text-slate-600">
@@ -265,7 +266,7 @@ export function AssessmentResults({
             <div className="grid gap-6 md:grid-cols-3">
               {/* Smoking Toggle */}
               <div className="rounded-lg border border-sky-200 bg-white p-5">
-                <label className="text-sm font-semibold text-slate-700 mb-3 block">
+                <label className="text-[length:var(--text-label)] font-medium text-[#1a1a1a] mb-3 block">
                   Smoking Status
                 </label>
                 <Toggle
@@ -276,7 +277,7 @@ export function AssessmentResults({
                     handleWhatIfChange("smokingStatus", isSmoker ? "current" : "never")
                   }
                 />
-                <p className="mt-3 text-xs text-slate-500">
+                <p className="mt-3 text-[length:var(--text-helper)] text-slate-500">
                   Smoking significantly increases cardiovascular risk
                 </p>
               </div>
@@ -306,7 +307,7 @@ export function AssessmentResults({
                   unit="kg"
                 />
                 {whatIfData.bmi && (
-                  <p className="mt-2 text-xs text-slate-500">
+                  <p className="mt-2 text-[length:var(--text-helper)] text-slate-500 tabular-nums">
                     BMI: {whatIfData.bmi.toFixed(1)}
                   </p>
                 )}
@@ -317,7 +318,7 @@ export function AssessmentResults({
 
         {/* Top 3 Risks */}
         <div>
-          <h2 className="text-2xl font-semibold text-slate-900 mb-8 lg:text-3xl">
+          <h2 className="text-[length:var(--text-page-title)] font-semibold text-[#1a1a1a] mb-8 lg:text-[length:var(--text-page-title-lg)]">
             Top 3 Risk Factors
           </h2>
           
@@ -336,12 +337,12 @@ export function AssessmentResults({
                       {/* Header */}
                       <div className="flex items-start justify-between gap-6 mb-8">
                         <div className="flex items-start gap-5 flex-1">
-                          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-white border-2 border-slate-300 font-bold text-xl text-slate-700 shadow-sm">
+                          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-white border-2 border-slate-300 font-bold text-[length:var(--text-section)] text-[#1a1a1a] shadow-sm tabular-nums">
                             {index + 1}
                           </div>
                           <div className="flex-1">
                             <div className="flex items-center gap-4 mb-3">
-                              <h3 className="text-2xl font-semibold text-slate-900 lg:text-3xl">
+                              <h3 className="text-[length:var(--text-section)] font-semibold text-[#1a1a1a] lg:text-[length:var(--text-section-lg)]">
                                 {risk.title}
                               </h3>
                               <span className={`inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold ${config.badge}`}>
@@ -350,24 +351,31 @@ export function AssessmentResults({
                               </span>
                             </div>
                             {risk.value && (
-                              <p className="text-base text-slate-600">
-                                {riskLabel}
-                                {risk.value.bmi && ` • BMI: ${risk.value.bmi}`}
-                                {risk.value.riskPercent !== undefined && (
-                                  <>
-                                    {risk.value.validated === false && (
-                                      <span className="text-orange-600 font-medium"> • 10-year risk not validated for this age group</span>
-                                    )}
-                                    {risk.value.validated !== false && ` • 10-year risk: ${risk.value.riskPercent}%`}
-                                  </>
+                              <div className="space-y-1">
+                                {(risk.value.riskPercent !== undefined && risk.value.validated !== false) && (
+                                  <p className="text-[length:var(--text-risk-number)] font-bold text-[#1a1a1a] tabular-nums lg:text-[length:var(--text-risk-number-lg)]">
+                                    10-year risk: {risk.value.riskPercent}%
+                                  </p>
                                 )}
-                                {risk.value.systolic && ` • SBP: ${risk.value.systolic} mmHg`}
+                                {(risk.value.systolic || risk.value.bmi) && (
+                                  <p className="text-base text-slate-600 tabular-nums">
+                                    {risk.value.systolic && <>SBP: {risk.value.systolic} mmHg</>}
+                                    {risk.value.systolic && risk.value.bmi && " • "}
+                                    {risk.value.bmi && <>BMI: {risk.value.bmi}</>}
+                                  </p>
+                                )}
+                                {risk.value.riskPercent === undefined && !risk.value.systolic && !risk.value.bmi && riskLabel && (
+                                  <p className="text-base text-slate-600">{riskLabel}</p>
+                                )}
+                                {risk.value.riskPercent !== undefined && risk.value.validated === false && (
+                                  <span className="text-amber-700 font-medium">10-year risk not validated for this age group</span>
+                                )}
                                 {risk.value.note && (
-                                  <span className="block mt-1 text-sm text-slate-500 italic">
+                                  <p className="text-[length:var(--text-helper)] text-slate-500 italic mt-1">
                                     {risk.value.note}
-                                  </span>
+                                  </p>
                                 )}
-                              </p>
+                              </div>
                             )}
                           </div>
                         </div>
@@ -376,7 +384,7 @@ export function AssessmentResults({
                       {/* Warnings (if any) */}
                       {risk.warnings && risk.warnings.length > 0 && (
                         <div className="mb-6 rounded-lg border-2 border-orange-200 bg-orange-50/50 p-5">
-                          <h4 className="text-base font-semibold text-orange-900 mb-3 flex items-center gap-2">
+                          <h4 className="text-[length:var(--text-input)] font-semibold text-amber-900 mb-3 flex items-center gap-2">
                             <span>⚠️</span>
                             Important Note
                           </h4>
@@ -393,10 +401,10 @@ export function AssessmentResults({
 
                       {/* Why we think this (Top 3 drivers) */}
                       <div className="mb-8">
-                        <h4 className="text-lg font-semibold text-slate-900 mb-4">
+                        <h4 className="text-[length:var(--text-section)] font-semibold text-[#1a1a1a] mb-4">
                           Why we think this
                         </h4>
-                        <p className="text-sm text-slate-600 mb-4">
+                        <p className="text-[length:var(--text-helper)] text-slate-600 mb-4">
                           Top {Math.min(risk.why.length, 3)} contributing factors:
                         </p>
                         <ul className="space-y-3">
@@ -409,7 +417,7 @@ export function AssessmentResults({
                             </li>
                           ))}
                           {risk.why.length > 3 && (
-                            <li className="text-sm text-slate-500 italic">
+                            <li className="text-[length:var(--text-helper)] text-slate-500 italic">
                               + {risk.why.length - 3} more factor{risk.why.length - 3 > 1 ? "s" : ""}
                             </li>
                           )}
@@ -419,10 +427,10 @@ export function AssessmentResults({
                       {/* What would reduce it (2-3 actions) */}
                       {risk.actions && risk.actions.length > 0 && (
                         <div className="rounded-lg border border-slate-200 bg-slate-50 p-6">
-                          <h4 className="text-lg font-semibold text-slate-900 mb-4">
+                          <h4 className="text-[length:var(--text-section)] font-semibold text-[#1a1a1a] mb-4">
                             What would reduce it
                           </h4>
-                          <p className="text-sm text-slate-600 mb-4">
+                          <p className="text-[length:var(--text-helper)] text-slate-600 mb-4">
                             {risk.actions.length <= 3 
                               ? "Recommended actions:" 
                               : `Top ${Math.min(risk.actions.length, 3)} recommended actions:`}
@@ -437,7 +445,7 @@ export function AssessmentResults({
                               </li>
                             ))}
                             {risk.actions.length > 3 && (
-                              <li className="text-sm text-slate-500 italic pl-10">
+                              <li className="text-[length:var(--text-helper)] text-slate-500 italic pl-10">
                                 + {risk.actions.length - 3} more action{risk.actions.length - 3 > 1 ? "s" : ""}
                               </li>
                             )}
@@ -455,8 +463,8 @@ export function AssessmentResults({
                 </p>
                 {safeResults.errors && safeResults.errors.length > 0 && (
                   <div className="mt-4">
-                    <p className="text-sm font-semibold text-rose-600 mb-2">Errors:</p>
-                    <ul className="text-sm text-rose-600 space-y-1">
+                    <p className="text-[length:var(--text-helper)] font-semibold text-rose-600 mb-2">Errors:</p>
+                    <ul className="text-[length:var(--text-helper)] text-rose-600 space-y-1">
                       {safeResults.errors.map((error, idx) => (
                         <li key={idx}>• {error}</li>
                       ))}
@@ -475,8 +483,8 @@ export function AssessmentResults({
               i
             </div>
             <div>
-              <p className="text-base font-semibold text-slate-900 mb-2">Disclaimer</p>
-              <p className="text-base text-slate-700 leading-relaxed">
+              <p className="text-[length:var(--text-input)] font-semibold text-[#1a1a1a] mb-2">Disclaimer</p>
+              <p className="text-base text-slate-600 leading-relaxed max-w-[680px]">
                 This assessment is for informational purposes only and should not replace professional medical advice. 
                 Please consult with a healthcare provider for personalized risk assessment and treatment recommendations.
               </p>

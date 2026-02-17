@@ -13,7 +13,7 @@ type FieldLabelProps = {
 
 export function FieldLabel({ children, required }: FieldLabelProps) {
   return (
-    <label className="flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wide text-slate-700">
+    <label className="flex items-center gap-1.5 text-[length:var(--text-label)] font-medium text-[#1a1a1a]">
       {children}
       {required && <span className="text-rose-500">*</span>}
     </label>
@@ -26,7 +26,7 @@ type FieldHelperProps = {
 };
 
 export function FieldHelper({ children, className = "" }: FieldHelperProps) {
-  return <p className={`text-sm text-slate-500 ${className}`}>{children}</p>;
+  return <p className={`text-[length:var(--text-helper)] text-slate-500 ${className}`}>{children}</p>;
 }
 
 type FieldErrorProps = {
@@ -34,5 +34,5 @@ type FieldErrorProps = {
 };
 
 export function FieldError({ children }: FieldErrorProps) {
-  return <p className="text-sm font-medium text-rose-600">{children}</p>;
+  return <p className="text-[length:var(--text-helper)] font-medium text-rose-600">{children}</p>;
 }

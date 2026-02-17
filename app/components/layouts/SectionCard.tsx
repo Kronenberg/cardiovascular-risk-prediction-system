@@ -22,15 +22,15 @@ export function SectionCard({
     <section aria-label={title}>
       <div className="mb-6 flex items-baseline justify-between gap-4">
         <div className="flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-sky-600 text-lg font-semibold text-white shadow-sm">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-sky-600 text-[length:var(--text-section)] font-semibold text-white shadow-sm tabular-nums">
             {index}
           </div>
           <div>
-            <h2 className="text-xl font-semibold text-slate-900 md:text-2xl">{title}</h2>
-            <p className="mt-1.5 text-sm text-slate-600">{subtitle}</p>
+            <h2 className="text-[length:var(--text-section)] font-semibold text-[#1a1a1a] md:text-[length:var(--text-section-lg)]">{title}</h2>
+            <p className="mt-1.5 text-[length:var(--text-helper)] text-slate-500">{subtitle}</p>
           </div>
         </div>
-        <div className="rounded-full bg-slate-50 px-4 py-1.5 text-xs font-medium uppercase tracking-wide text-slate-500">
+        <div className="rounded-full bg-slate-50 px-4 py-1.5 text-[length:var(--text-helper)] font-medium uppercase tracking-wide text-slate-500 tabular-nums">
           Step {index} of {TOTAL_STEPS}
         </div>
       </div>
@@ -41,10 +41,10 @@ export function SectionCard({
               ⚠️
             </span>
             <div>
-              <p className="text-sm font-semibold text-rose-800">
+              <p className="text-[length:var(--text-label)] font-semibold text-rose-700">
                 Please fix the following errors to continue:
               </p>
-              <ul className="mt-1.5 list-inside list-disc space-y-1 text-sm text-rose-700">
+              <ul className="mt-1.5 list-inside list-disc space-y-1 text-[length:var(--text-helper)] text-rose-600">
                 {Object.values(errors).map((error, idx) => (
                   <li key={idx}>{error}</li>
                 ))}

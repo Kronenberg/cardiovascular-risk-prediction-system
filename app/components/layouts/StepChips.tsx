@@ -10,7 +10,7 @@ export function StepChips({ currentStep, visibleSteps }: StepChipProps) {
   const stepsToShow = visibleSteps || STEP_LABELS.map((_, index) => index + 1);
   
   return (
-    <div className="mt-6 flex flex-wrap gap-3 text-sm">
+    <div className="mt-6 flex flex-wrap gap-3 text-[length:var(--text-label)]">
       {STEP_LABELS.map((label, index) => {
         const stepIndex = index + 1;
         

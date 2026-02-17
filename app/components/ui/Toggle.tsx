@@ -11,7 +11,7 @@ export function Toggle({ value, onChange, labelOn, labelOff }: ToggleProps) {
       type="button"
       onClick={() => onChange(!value)}
       className={[
-        "inline-flex items-center gap-4 rounded-full border px-4 py-2.5 text-sm font-medium shadow-sm transition",
+        "inline-flex items-center gap-4 rounded-full border px-4 py-2.5 text-[length:var(--text-label)] font-medium shadow-sm transition",
         value
           ? "border-sky-500 bg-white text-sky-800"
           : "border-slate-200 bg-slate-50 text-slate-700",

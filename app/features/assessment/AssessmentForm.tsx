@@ -195,14 +195,14 @@ export function AssessmentForm() {
             📋 Load Sample Patient
           </button>
           <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 py-2">
-            <span className="text-sm font-medium text-slate-700">Mode:</span>
+            <span className="text-[length:var(--text-label)] font-medium text-[#1a1a1a]">Mode:</span>
             <Toggle
               labelOn="Advanced"
               labelOff="Basic"
               value={isAdvancedMode}
               onChange={setIsAdvancedMode}
             />
-            <span className="text-xs text-slate-500">
+            <span className="text-[length:var(--text-helper)] text-slate-500">
               {isAdvancedMode ? "All fields" : "8 required fields"}
             </span>
           </div>
