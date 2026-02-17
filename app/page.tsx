@@ -1,5 +1,5 @@
-import { AssessmentForm } from "@/app/features/assessment/AssessmentForm";
+import { AssessmentFormContainer } from "@/app/features/assessment/containers/AssessmentFormContainer";
 
 export default function Home() {
-  return <AssessmentForm />;
+  return <AssessmentFormContainer />;
 }
