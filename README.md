@@ -506,9 +506,9 @@ Contributions welcome! Please ensure:
 
 | Area | Shortcut | What Would Be Done With More Time |
 |------|----------|-----------------------------------|
-| **ASCVD Risk** | Uses a **simplified proxy** formula, not the full ACC/AHA Pooled Cohort Equations | Implement the published Cox model with race/sex-specific coefficients, log-transformed variables, and baseline survival terms |
-| **Framingham** | **Not implemented** (mentioned in UI/docs) | Implement 10-year CHD risk with the published Framingham coefficients (log-age, log-TC, log-HDL, log-SBP, smoking, diabetes) |
-| **WHO CVD** | **Not implemented** (mentioned in UI/docs) | Implement lab-based or non-lab WHO model with regional calibration; or integrate with WHO risk chart lookup |
+| **ASCVD Risk** | **Implemented (simplified)** — `calculateAscvdRisk()` uses Pooled Cohort variables (age, sex, TC, HDL, SBP, BP meds, diabetes, smoking) and ACC/AHA risk bands (<5%, 5–7.4%, 7.5–19.9%, ≥20%). Uses heuristic weights, not the published Cox coefficients | Implement the full Pooled Cohort Equations: race/sex-specific coefficients, log-transformed variables, and baseline survival terms |
+| **Framingham** | **Not a separate model** — no `calculateFraminghamRisk()`. The ASCVD-style calculation uses the same risk factor set (age, sex, lipids, BP, diabetes, smoking), so outputs are conceptually aligned | Add a dedicated Framingham 10-year CHD function with published coefficients (log-age, log-TC, log-HDL, log-SBP, smoking, diabetes) |
+| **WHO CVD** | **Not a separate model** — no `calculateWhoCvdRisk()`. Same variable overlap; ASCVD-style model covers WHO lab-based inputs | Add a dedicated WHO model with lab-based or non-lab equations and regional calibration (21 WHO regions) |
 | **Race in ASCVD** | Race/ethnicity is collected but **not used** in risk calculation | Use race in Pooled Cohort Equations (White vs African American coefficients); add guidance for Other/Asian/Hispanic |
 | **Unit Tests** | **No automated tests** | Add unit tests for risk calculations, validators, and normalization; integration tests for the predict API |
 | **PDF Export** | Listed in Future Enhancements only | Implement server-side PDF generation with results summary and disclaimer |
@@ -522,18 +522,18 @@ Contributions welcome! Please ensure:
 
 #### 1. Risk calculation models (`app/lib/risk-calculations.ts`)
 
-- **ASCVD**: Current logic is a heuristic (age, sex, cholesterol ratio, BP, diabetes, smoking) that approximates risk bands. The real Pooled Cohort Equations use:
+- **ASCVD**: Implemented in `calculateAscvdRisk()` with Pooled Cohort variables and ACC/AHA risk bands. Uses heuristic weights instead of the published Cox model. Full implementation would add:
   - Log-transformed age, total cholesterol, HDL
   - Race-specific betas (White / African American)
   - Sex-specific baseline survival
   - Official formula: `1 - S₁₀^exp(ΣβᵢXᵢ - B̄)`
 
-- **Framingham 10-year CHD**: Stub. Would add:
-  - Sex-specific Cox model with published coefficients
-  - Formula: `1 - 0.88936^exp(ΣβX - 23.9802)` (men) and `1 - 0.95012^exp(ΣβX - 26.1931)` (women)
+- **Framingham 10-year CHD**: Not implemented as a separate function. Would add:
+  - Dedicated `calculateFraminghamRisk()` with sex-specific Cox model
+  - Published coefficients and formula: `1 - 0.88936^exp(ΣβX - 23.9802)` (men) and `1 - 0.95012^exp(ΣβX - 26.1931)` (women)
 
-- **WHO CVD**: Stub. Would add:
-  - Lab-based model (age, sex, smoking, SBP, diabetes, total cholesterol)
+- **WHO CVD**: Not implemented as a separate function. Would add:
+  - Dedicated `calculateWhoCvdRisk()` with lab-based model (age, sex, smoking, SBP, diabetes, total cholesterol)
   - Non-lab model (age, sex, smoking, SBP, BMI) for settings without lipids
   - Region-specific calibration (21 WHO regions)
 
