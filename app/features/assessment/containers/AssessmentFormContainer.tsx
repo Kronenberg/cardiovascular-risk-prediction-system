@@ -11,8 +11,9 @@ import type { FormData } from "@/app/types/assessment";
 import { TOTAL_STEPS, initialFormState } from "@/app/constants/assessment";
 import {
   validateStep,
-  type ValidationErrors,
+  validateFormSubmission,
 } from "@/app/utils/validation";
+import type { ValidationErrors } from "@/app/types/assessment";
 import { useSubmitAssessment } from "@/app/hooks/useAssessment";
 import { convertCholesterol } from "@/app/lib/unit-conversion";
 import { samplePatientData } from "@/app/constants/sample-patient";
@@ -120,6 +121,29 @@ export function AssessmentFormContainer() {
   };
 
   const handleFinish = () => {
+    // Use form submission validation which includes cross-step checks
+    const formErrors = validateFormSubmission(data);
+    if (Object.keys(formErrors).length > 0) {
+      setErrors(formErrors);
+      // Navigate to the step with the first error
+      const firstErrorKey = Object.keys(formErrors)[0];
+      if (firstErrorKey === "raceEthnicity") {
+        setStep(1); // Demographics step
+      } else if (firstErrorKey === "age" || firstErrorKey === "sexAtBirth") {
+        setStep(1);
+      } else if (firstErrorKey === "systolicBp" || firstErrorKey === "onBpMeds") {
+        setStep(2);
+      } else if (firstErrorKey === "totalCholesterol" || firstErrorKey === "hdlCholesterol") {
+        setStep(3);
+      } else if (firstErrorKey === "hasDiabetes") {
+        setStep(4);
+      } else if (firstErrorKey === "smokingStatus") {
+        setStep(5);
+      }
+      return;
+    }
+    
+    // Also validate current step
     const stepErrors = validateStep(step, data);
     if (Object.keys(stepErrors).length > 0) {
       setErrors(stepErrors);
@@ -135,9 +159,16 @@ export function AssessmentFormContainer() {
         const remaining = Math.max(0, 3000 - elapsed);
         setTimeout(() => {
           if (results && results.top3 && results.top3.length > 0) {
-            const encoded = encodeURIComponent(JSON.stringify(results));
-            const formDataEncoded = encodeURIComponent(JSON.stringify(data));
-            router.push(`/results?data=${encoded}&formData=${formDataEncoded}`);
+            // Store results and form data in sessionStorage
+            try {
+              sessionStorage.setItem("assessment-results", JSON.stringify(results));
+              sessionStorage.setItem("assessment-formData", JSON.stringify(data));
+              router.push("/results");
+            } catch (error) {
+              console.error("Error storing assessment data:", error);
+              setShowLoader(false);
+              alert("Failed to store assessment results. Please try again.");
+            }
           } else {
             setShowLoader(false);
             alert("Assessment completed but no results were returned.");

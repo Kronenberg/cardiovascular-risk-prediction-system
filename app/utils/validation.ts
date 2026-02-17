@@ -19,6 +19,9 @@ export function validateStep(step: number, data: FormData): ValidationErrors {
       if (!data.sexAtBirth || data.sexAtBirth === "") {
         errors.sexAtBirth = "Sex assigned at birth is required";
       }
+
+      // Race/Ethnicity: recommended for ASCVD (age 40-79), but not strictly required at step 1
+      // Will be validated at form submission if ASCVD-eligible
       break;
 
     case 2: // Vital Signs
@@ -123,4 +126,32 @@ export function validateStep(step: number, data: FormData): ValidationErrors {
 export function isStepValid(step: number, data: FormData): boolean {
   const errors = validateStep(step, data);
   return Object.keys(errors).length === 0;
+}
+
+/**
+ * Validate entire form before submission
+ * Includes cross-step validations (e.g., race/ethnicity for ASCVD)
+ */
+export function validateFormSubmission(data: FormData): ValidationErrors {
+  const errors = validateStep(1, data);
+  
+  // Add cross-step validations
+  const age = parseInt(data.age, 10);
+  const isAscvdEligible =
+    !isNaN(age) &&
+    age >= 40 &&
+    age <= 79 &&
+    data.hasLabResults === true &&
+    data.totalCholesterol &&
+    data.totalCholesterol.trim() !== "" &&
+    data.hdlCholesterol &&
+    data.hdlCholesterol.trim() !== "";
+
+  // Race/Ethnicity is required for ASCVD calculation
+  if (isAscvdEligible && (!data.raceEthnicity || data.raceEthnicity === "")) {
+    errors.raceEthnicity =
+      "Race/ethnicity is required for ASCVD risk calculation (uses race-specific coefficients). Please complete the Demographics section.";
+  }
+
+  return errors;
 }

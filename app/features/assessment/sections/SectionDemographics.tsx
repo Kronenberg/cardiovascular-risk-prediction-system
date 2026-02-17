@@ -8,6 +8,24 @@ import {
 import { RadioGroup } from "@/app/components/ui/RadioGroup";
 import { INPUT_CLASS } from "@/app/constants/assessment";
 
+/**
+ * Check if patient is eligible for ASCVD calculation (age 40-79 with lab results)
+ * This determines if race/ethnicity should be required
+ */
+function isAscvdEligible(data: SectionProps["data"]): boolean {
+  const age = parseInt(data.age, 10);
+  return (
+    !isNaN(age) &&
+    age >= 40 &&
+    age <= 79 &&
+    data.hasLabResults === true &&
+    data.totalCholesterol &&
+    data.totalCholesterol.trim() !== "" &&
+    data.hdlCholesterol &&
+    data.hdlCholesterol.trim() !== ""
+  );
+}
+
 export function SectionDemographics({
   data,
   onChange,
@@ -65,7 +83,12 @@ export function SectionDemographics({
         </Field>
 
         <Field>
-          <FieldLabel>Race / Ethnicity (optional)</FieldLabel>
+          <FieldLabel required={isAscvdEligible(data)}>
+            Race / Ethnicity
+            {isAscvdEligible(data) && (
+              <span className="ml-1 text-xs text-slate-500">(required for ASCVD)</span>
+            )}
+          </FieldLabel>
           <RadioGroup<RaceEthnicity>
             options={[
               { label: "White", value: "white" },
@@ -79,9 +102,15 @@ export function SectionDemographics({
             onChange={(value) => onChange("raceEthnicity", value)}
             layout="two-column"
           />
-          <FieldHelper>
-            ASCVD includes race adjustment; WHO charts vary by region.
-          </FieldHelper>
+          {errors.raceEthnicity ? (
+            <FieldError>{errors.raceEthnicity}</FieldError>
+          ) : (
+            <FieldHelper>
+              {isAscvdEligible(data)
+                ? "Required for ASCVD risk calculation (uses race-specific coefficients). Other/Asian/Hispanic use White coefficients per guidelines."
+                : "ASCVD includes race adjustment; WHO charts vary by region."}
+            </FieldHelper>
+          )}
         </Field>
       </div>
     </div>

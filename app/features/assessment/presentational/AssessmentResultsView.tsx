@@ -137,7 +137,7 @@ export function AssessmentResultsView({
     .map((r) => ({
       id: r.id,
       label: riskTypeLabels[r.id] || r.title,
-      percent: r.value.riskPercent as number,
+      percent: r.value?.riskPercent as number,
       value: r.value,
     }));
 

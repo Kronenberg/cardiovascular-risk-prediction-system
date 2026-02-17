@@ -256,8 +256,8 @@ app/
 The frontend follows the **Container/Presentational** architecture pattern:
 
 - **Containers** (`containers/`): Handle logic, state management, data fetching, and side effects
-  - `AssessmentFormContainer`: Manages form state, validation, submission, navigation
-  - `AssessmentResultsContainer`: Handles URL parsing, what-if scenarios, recomputation
+  - `AssessmentFormContainer`: Manages form state, validation, submission, navigation, stores results in sessionStorage
+  - `AssessmentResultsContainer`: Handles sessionStorage data loading, what-if scenarios, recomputation
 
 - **Presentational Components** (`presentational/`): Pure UI components that receive props and render
   - `AssessmentFormView`: Renders form UI based on props
@@ -290,18 +290,19 @@ The frontend follows the **Container/Presentational** architecture pattern:
 ```
 User Input → Container (State) → Presentational (UI) → 
 User Interaction → Container (Handler) → 
-Client Validation → API Route → 
+Client Validation → API Route (POST) → 
 Input Validation → Normalization Service → 
 Risk Assessment Service → Warning Detection → 
-Container (State Update) → Presentational (Re-render) → 
-What-If Scenarios → Container (Recomputation) → 
-Presentational (Updated Results)
+Container (Store in sessionStorage) → Navigate to /results → 
+Results Container (Load from sessionStorage) → Presentational (Render) → 
+What-If Scenarios → Container (Recomputation via API) → 
+Container (Update sessionStorage) → Presentational (Updated Results)
 ```
 
 #### 5. **State Management**
 - **Local State**: React `useState` in containers for form data and UI state
 - **Server State**: React Query for API calls (handled in containers)
-- **URL State**: Query parameters for results page (parsed in containers)
+- **Session State**: sessionStorage for results and form data (stored by `AssessmentFormContainer`, loaded by `AssessmentResultsContainer`)
 - **What-If State**: Managed in `AssessmentResultsContainer` for scenario calculations
 
 ## 🚀 Getting Started
@@ -441,7 +442,7 @@ Risks recalculate automatically after 500ms of inactivity.
   - No business logic
 
 - **Results Container**: `app/features/assessment/containers/AssessmentResultsContainer.tsx`
-  - URL parsing and state management
+  - sessionStorage data loading and state management
   - What-if scenario handling
   - Recomputation logic
   - Data fetching orchestration
@@ -480,10 +481,19 @@ The backend uses a **service layer architecture** where:
 
 #### Error Handling
 
-- Custom error classes (`ValidationError`, `RiskCalculationError`, `DataNormalizationError`)
-- Centralized error response formatting
-- Proper HTTP status codes (400 for validation, 500 for server errors)
-- Error messages are user-friendly and actionable
+- **Consistent Pattern**: All errors are thrown and caught by `createApiHandler` wrapper
+- **Custom Error Classes**: `ValidationError`, `RiskCalculationError`, `DataNormalizationError`
+- **Centralized Response Formatting**: All errors go through `createErrorResponse()`
+- **Proper HTTP Status Codes**: 400 for validation/client errors, 500 for server errors
+- **Request Logging**: Each request has a unique ID for tracing
+- **Error Messages**: User-friendly and actionable
+
+#### Security & Performance Features
+
+- **Request Size Limits**: Maximum 10KB body size to prevent DoS attacks
+- **Request Logging**: All requests logged with unique ID and response time
+- **Error Tracing**: Request IDs included in error responses for debugging
+- **Consistent Error Handling**: All errors follow the same pattern through `createApiHandler`
 
 #### Benefits of This Architecture
 
@@ -492,6 +502,7 @@ The backend uses a **service layer architecture** where:
 - **Extensibility**: Easy to add new risk models or validators
 - **Type Safety**: Full TypeScript coverage throughout
 - **Error Handling**: Consistent error responses across the API
+- **Observability**: Request logging and tracing for production debugging
 
 ### Adding New Risk Models
 
@@ -569,12 +580,14 @@ Contributions welcome! Please ensure:
 - **Validator pattern**: New fields or rules go into `patient-validator.ts` and `human-validation.ts` without touching business logic.
 
 #### Why no database?
-- Assignment scope favors a single-session flow. Results are encoded in the URL for sharing and bookmarking.
+- Assignment scope favors a single-session flow. Results are stored in browser sessionStorage for the session duration.
 - A real product would add auth + persistence; the current design does not block that.
 
-#### Why URL-encoded results?
-- Keeps the app stateless and avoids session storage.
-- Tradeoff: Very long URLs for complex results; in production we would store results server-side and link by ID.
+#### Why sessionStorage for results?
+- **Implemented**: Results are stored in browser sessionStorage after API call, avoiding URL length limits and security concerns.
+- Keeps the app stateless (no server-side session management needed).
+- Clean URLs: `/results` instead of `/results?data=...&formData=...`
+- Tradeoff: Results are lost when the browser session ends; in production we would store results server-side and link by ID for persistence and sharing.
 
 ---
 
@@ -586,6 +599,7 @@ Contributions welcome! Please ensure:
 | **Framingham** | **Implemented** | Dedicated `calculateFraminghamRisk()` in `risk-calculations/framingham/`: 10-year CHD, D'Agostino 2008 coefficients, sex-specific baseline (0.88936 / 0.95012) and mean linear predictor; log-age, log-TC, log-HDL, log-SBP, smoking, diabetes. |
 | **WHO CVD** | **Implemented** | Dedicated `calculateWhoCvdRisk()` in `risk-calculations/who/`: lab-based (age, sex, SBP, TC, smoking, diabetes) and non-lab (age, sex, SBP, BMI, smoking); 21 GBD regions with calibration; CHD + stroke combined risk. |
 | **Race in ASCVD** | **Implemented** | Race/ethnicity used in PCE: White vs African American coefficients; Other/Asian/Hispanic use White coefficients per guideline guidance. |
+| **Results Storage** | **Implemented** | Results stored in browser sessionStorage after API POST (not URL-encoded). Clean URLs, avoids length limits. For production with sharing, would use server-side storage with short IDs. |
 | **Unit Tests** | **Not yet** | No automated tests for risk calculations, validators, or normalization; no integration tests for the predict API. |
 | **PDF Export** | Listed in Future Enhancements only | Implement server-side PDF generation with results summary and disclaimer. |
 | **Error Recovery** | Basic `alert()` for API errors | Toast/notification system and retry UI. |
@@ -610,7 +624,7 @@ Risk logic is split into a dedicated module with one folder per model:
 
 #### 2. Data flow
 
-- **Results in URL**: Fine for demos; for production we would store results server-side and use short IDs.
+- **Results in sessionStorage**: **Implemented** - Results are stored in browser sessionStorage after API POST request. This avoids URL length limits and keeps URLs clean. For production with sharing/bookmarking, we would store results server-side and use short IDs.
 - **No rate limiting**: API has no throttling; would add rate limiting (e.g., per IP or per session).
 
 #### 3. Validation & normalization

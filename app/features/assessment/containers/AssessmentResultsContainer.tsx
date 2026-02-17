@@ -2,17 +2,19 @@
 
 /**
  * Container component for Assessment Results.
- * Handles: URL parsing, state management, what-if scenarios, recomputation logic.
+ * Handles: Data fetching from sessionStorage, state management, what-if scenarios, recomputation logic.
  */
 
-import { useSearchParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useEffect, useState, useCallback } from "react";
 import type { FormData } from "@/app/types/assessment";
 import { AssessmentResultsView } from "@/app/features/assessment/presentational/AssessmentResultsView";
 import type { ResultsData } from "../types";
 
+const ASSESSMENT_RESULTS_KEY = "assessment-results";
+const ASSESSMENT_FORMDATA_KEY = "assessment-formData";
+
 export function AssessmentResultsContainer() {
-  const searchParams = useSearchParams();
   const router = useRouter();
   const [results, setResults] = useState<ResultsData | null>(null);
   const [originalFormData, setOriginalFormData] = useState<FormData | null>(null);
@@ -22,29 +24,30 @@ export function AssessmentResultsContainer() {
   const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
-    const resultsParam = searchParams.get("data");
-    const formDataParam = searchParams.get("formData");
+    // Load results and form data from sessionStorage
+    try {
+      const resultsData = sessionStorage.getItem(ASSESSMENT_RESULTS_KEY);
+      const formDataStr = sessionStorage.getItem(ASSESSMENT_FORMDATA_KEY);
 
-    if (resultsParam) {
-      try {
-        const decoded = decodeURIComponent(resultsParam);
-        const parsed = JSON.parse(decoded);
+      if (resultsData) {
+        const parsed = JSON.parse(resultsData);
         setResults(parsed);
 
-        if (formDataParam) {
-          const formDecoded = decodeURIComponent(formDataParam);
-          const formParsed = JSON.parse(formDecoded);
+        if (formDataStr) {
+          const formParsed = JSON.parse(formDataStr);
           setOriginalFormData(formParsed);
         }
-      } catch (error) {
-        console.error("Error parsing results:", error);
+      } else {
+        // No results found, redirect to home
         router.push("/");
       }
-    } else {
+    } catch (error) {
+      console.error("Error loading assessment data:", error);
       router.push("/");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-  }, [searchParams, router]);
+  }, [router]);
 
   // Initialize what-if data from original form data
   useEffect(() => {
@@ -79,6 +82,14 @@ export function AssessmentResultsContainer() {
 
       const newResults = result.data || result;
       setResults(newResults);
+      
+      // Update sessionStorage with new results
+      try {
+        sessionStorage.setItem(ASSESSMENT_RESULTS_KEY, JSON.stringify(newResults));
+      } catch (error) {
+        console.error("Error updating session storage:", error);
+      }
+      
       return newResults;
     } catch (error) {
       console.error("Error recomputing risks:", error);
@@ -148,6 +159,13 @@ export function AssessmentResultsContainer() {
   };
 
   const handleReset = () => {
+    // Clear sessionStorage and redirect
+    try {
+      sessionStorage.removeItem(ASSESSMENT_RESULTS_KEY);
+      sessionStorage.removeItem(ASSESSMENT_FORMDATA_KEY);
+    } catch (error) {
+      console.error("Error clearing session storage:", error);
+    }
     router.push("/");
   };
 

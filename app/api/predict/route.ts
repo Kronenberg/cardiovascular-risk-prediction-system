@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { createApiHandler, validateRequestBody } from "@/app/lib/middleware/api-handler";
 import { validatePatientData } from "@/app/lib/validators/patient-validator";
+import { ValidationError } from "@/app/lib/errors/api-errors";
 import { patientNormalizationService } from "@/app/lib/services/patient-normalization.service";
 import { riskAssessmentService } from "@/app/lib/services/risk-assessment.service";
 import { warningDetectionService } from "@/app/lib/services/warning-detection.service";
@@ -10,7 +11,6 @@ import type { RiskCandidate } from "@/app/lib/risk-calculations";
 export interface PredictionResponse {
   top3: RiskCandidate[];
   allRisks: RiskCandidate[];
-  errors: string[];
   warnings: string[];
 }
 
@@ -20,7 +20,12 @@ export interface PredictionResponse {
  * Predicts cardiovascular risk based on patient data
  * 
  * Request body: FormData (patient assessment form data)
- * Response: PredictionResponse (top 3 risks, errors, warnings)
+ * Response: PredictionResponse (top 3 risks, all risks, warnings)
+ * 
+ * Errors are handled by createApiHandler wrapper:
+ * - Validation errors return 400 with error details
+ * - Server errors return 500 with error message
+ * - All requests are logged with unique request ID
  */
 async function handlePrediction(request: NextRequest): Promise<PredictionResponse> {
   // Step 1: Parse and validate request body
@@ -32,12 +37,13 @@ async function handlePrediction(request: NextRequest): Promise<PredictionRespons
   // Step 2: Validate patient data
   const validation = validatePatientData(formData);
   if (!validation.isValid) {
-    return {
-      top3: [],
-      allRisks: [],
-      errors: validation.errors.map((e) => e.message),
-      warnings: [],
-    };
+    // Throw validation error to be handled consistently by createApiHandler
+    const errorMessages = validation.errors.map((e) => e.message).join("; ");
+    throw new ValidationError(
+      `Validation failed: ${errorMessages}`,
+      validation.errors[0]?.field,
+      "VALIDATION_FAILED"
+    );
   }
 
   // Step 3: Normalize patient data
@@ -57,7 +63,6 @@ async function handlePrediction(request: NextRequest): Promise<PredictionRespons
   return {
     top3: assessment.top3,
     allRisks: assessment.allRisks,
-    errors: [],
     warnings: allWarnings,
   };
 }
