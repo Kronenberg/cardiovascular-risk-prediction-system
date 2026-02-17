@@ -23,6 +23,7 @@ import { useRouter } from "next/navigation";
 import { convertCholesterol } from "@/app/lib/unit-conversion";
 import { samplePatientData } from "@/app/constants/sample-patient";
 import { Toggle } from "@/app/components/ui/Toggle";
+import { AssessmentLoader } from "@/app/components/ui/AssessmentLoader";
 
 export function AssessmentForm() {
   const router = useRouter();
@@ -30,6 +31,7 @@ export function AssessmentForm() {
   const [data, setData] = useState<FormData>(initialFormState);
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [isAdvancedMode, setIsAdvancedMode] = useState(true); // Default to Advanced mode
+  const [showLoader, setShowLoader] = useState(false);
   const { mutate: submitAssessment, isPending } = useSubmitAssessment();
 
   const progress = useMemo(
@@ -118,19 +120,27 @@ export function AssessmentForm() {
       return;
     }
 
+    setShowLoader(true);
+    const startTime = Date.now();
+
     // Submit to API
     submitAssessment(data, {
       onSuccess: (results) => {
-        // Encode results and navigate to results page
-        if (results && results.top3 && results.top3.length > 0) {
-          const encoded = encodeURIComponent(JSON.stringify(results));
-          const formDataEncoded = encodeURIComponent(JSON.stringify(data));
-          router.push(`/results?data=${encoded}&formData=${formDataEncoded}`);
-        } else {
-          alert("Assessment completed but no results were returned.");
-        }
+        const elapsed = Date.now() - startTime;
+        const remaining = Math.max(0, 3000 - elapsed);
+        setTimeout(() => {
+          if (results && results.top3 && results.top3.length > 0) {
+            const encoded = encodeURIComponent(JSON.stringify(results));
+            const formDataEncoded = encodeURIComponent(JSON.stringify(data));
+            router.push(`/results?data=${encoded}&formData=${formDataEncoded}`);
+          } else {
+            setShowLoader(false);
+            alert("Assessment completed but no results were returned.");
+          }
+        }, remaining);
       },
       onError: (error) => {
+        setShowLoader(false);
         console.error("Submission error:", error);
         alert(`Failed to submit assessment: ${error.message || "Please try again."}`);
       },
@@ -168,7 +178,9 @@ export function AssessmentForm() {
   );
 
   return (
-    <AssessmentLayout
+    <>
+      {showLoader && <AssessmentLoader />}
+      <AssessmentLayout
       currentStep={visibleSteps.indexOf(step) + 1}
       progress={currentProgress}
       totalSteps={currentTotalSteps}
@@ -320,5 +332,6 @@ export function AssessmentForm() {
         </SectionCard>
       )}
     </AssessmentLayout>
+    </>
   );
 }
