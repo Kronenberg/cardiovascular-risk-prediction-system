@@ -36,8 +36,8 @@ export class RiskAssessmentService {
 
       // Extract warnings from risk candidates
       const warnings = allRisks
-        .flatMap((risk) => risk.warnings || [])
-        .filter((w): w is string => typeof w === "string");
+        .flatMap((risk: RiskCandidate) => risk.warnings || [])
+        .filter((w: unknown): w is string => typeof w === "string");
 
       return {
         top3,
@@ -59,7 +59,7 @@ export class RiskAssessmentService {
    */
   getRiskById(patient: NormalizedPatient, riskId: string): RiskCandidate | null {
     const allRisks = evaluateRisks(patient);
-    return allRisks.find((risk) => risk.id === riskId) || null;
+    return allRisks.find((risk: RiskCandidate) => risk.id === riskId) || null;
   }
 }
 
