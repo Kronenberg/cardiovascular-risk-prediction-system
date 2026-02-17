@@ -35,6 +35,7 @@ export type RiskResult = {
 
 export type ResultsData = {
   top3: RiskResult[];
+  allRisks?: RiskResult[];
   errors: string[];
   warnings: string[];
 };
@@ -88,6 +89,8 @@ const levelConfig = {
 /* Risk type → medical icon mapping */
 const riskTypeIcons: Record<string, React.ComponentType<{ className?: string; size?: number }>> = {
   ascvd_10yr: IconHeart,
+  framingham_10yr_chd: IconHeart,
+  who_cvd_10yr: IconHeart,
   bp_category: IconActivity,
   diabetes: IconDroplet,
   diabetes_risk: IconDroplet,
@@ -100,11 +103,22 @@ const riskTypeLabels: Record<string, string> = {
   diabetes: "Diabetes",
   bp_category: "Blood Pressure",
   ascvd_10yr: "ASCVD Risk",
+  framingham_10yr_chd: "Framingham CHD Risk",
+  who_cvd_10yr: "WHO CVD Risk",
   severe_obesity: "Obesity",
   obesity: "Obesity",
   relative_risk: "Risk Factors",
   diabetes_risk: "Diabetes Risk",
 };
+
+/** Human-readable WHO region for display */
+function whoRegionLabel(region: string | undefined): string {
+  if (!region) return "";
+  return region
+    .split("_")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
 
 export function AssessmentResults({
   results,
@@ -116,13 +130,23 @@ export function AssessmentResults({
   const [isRecomputing, setIsRecomputing] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
 
-  // Ensure results has top3 array
+  // Ensure results has top3 and allRisks arrays
   const safeResults = {
     ...results,
     top3: results.top3 || [],
+    allRisks: results.allRisks ?? results.top3 ?? [],
     errors: results.errors || [],
     warnings: results.warnings || [],
   };
+
+  // 10-year risk models (for summary strip)
+  const risk10YrIds = ["ascvd_10yr", "framingham_10yr_chd", "who_cvd_10yr"] as const;
+  const risk10YrSummary = risk10YrIds
+    .map((id) => safeResults.allRisks.find((r) => r.id === id))
+    .filter((r): r is RiskResult => r != null && r.value?.riskPercent != null)
+    .map((r) => ({ id: r.id, label: riskTypeLabels[r.id] || r.title, percent: r.value.riskPercent, value: r.value }));
+
+  const has10YrSummary = risk10YrSummary.length > 0;
 
   // Initialize what-if data from original form data
   useEffect(() => {
@@ -242,6 +266,39 @@ export function AssessmentResults({
             </div>
           </div>
         </div>
+
+        {/* 10-year risk summary (ASCVD, Framingham, WHO) */}
+        {has10YrSummary && (
+          <div className="rounded-xl border border-slate-200 bg-gradient-to-br from-slate-50 to-sky-50/50 p-6 ring-1 ring-slate-100">
+            <h2 className="text-[length:var(--text-section)] font-semibold text-[#1a1a1a] mb-4 flex items-center gap-2">
+              <IconHeart size={22} className="text-sky-600" />
+              10-year risk at a glance
+            </h2>
+            <div className="grid gap-4 sm:grid-cols-3">
+              {risk10YrSummary.map(({ id, label, percent, value }) => (
+                <div
+                  key={id}
+                  className="rounded-lg border border-slate-200 bg-white px-5 py-4 shadow-sm"
+                >
+                  <p className="text-[length:var(--text-helper)] text-slate-500 mb-1">{label}</p>
+                  <p className="text-2xl font-bold tabular-nums text-[#1a1a1a]">{percent}%</p>
+                  {(value.model || value.region) && (
+                    <p className="mt-1.5 text-sm text-slate-500">
+                      {value.model === "lab" && "Lab model"}
+                      {value.model === "non_lab" && "Non-lab model"}
+                      {value.region && ` • ${whoRegionLabel(value.region)}`}
+                    </p>
+                  )}
+                  {value.raceEthnicity && value.sex && (
+                    <p className="mt-1 text-sm text-slate-500 capitalize">
+                      {value.raceEthnicity} {value.sex}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Warnings */}
         {safeResults.warnings && safeResults.warnings.length > 0 && (
@@ -425,6 +482,17 @@ export function AssessmentResults({
                                     {risk.value.bmi && <>BMI: {risk.value.bmi}</>}
                                   </p>
                                 )}
+                                {/* Model-specific meta: WHO region/model, ASCVD race/sex */}
+                                {(risk.value.model || risk.value.region || (risk.value.raceEthnicity && risk.value.sex)) && (
+                                  <p className="text-[length:var(--text-helper)] text-slate-500">
+                                    {risk.value.model === "lab" && "Lab-based model"}
+                                    {risk.value.model === "non_lab" && "Non-lab model"}
+                                    {risk.value.region && ` • ${whoRegionLabel(risk.value.region)}`}
+                                    {risk.value.raceEthnicity && risk.value.sex && (
+                                      <span className="capitalize"> • {risk.value.raceEthnicity} {risk.value.sex}</span>
+                                    )}
+                                  </p>
+                                )}
                                 {risk.value.riskPercent === undefined && !risk.value.systolic && !risk.value.bmi && riskLabel && (
                                   <p className="text-base text-slate-600">{riskLabel}</p>
                                 )}
@@ -537,6 +605,50 @@ export function AssessmentResults({
             )}
           </div>
         </div>
+
+        {/* All risk factors (from all models) — show when we have more than top 3 */}
+        {safeResults.allRisks.length > 3 && (
+          <div>
+            <div className="mb-6 flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
+                <IconClipboardList size={22} />
+              </div>
+              <div>
+                <h2 className="text-[length:var(--text-page-title)] font-semibold text-[#1a1a1a] lg:text-[length:var(--text-page-title-lg)]">
+                  All risk factors
+                </h2>
+                <p className="text-[length:var(--text-helper)] text-slate-500 mt-0.5">
+                  Full set of risks from ASCVD, Framingham, WHO, and other models
+                </p>
+              </div>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {safeResults.allRisks.map((risk) => {
+                const config = levelConfig[risk.level];
+                const LevelIcon = config.Icon;
+                const label = riskTypeLabels[risk.id] || risk.title;
+                const pct = risk.value?.riskPercent;
+                return (
+                  <div
+                    key={risk.id}
+                    className={`rounded-lg border ${config.border} ${config.bg} px-4 py-3 flex items-center justify-between gap-3`}
+                  >
+                    <div className="min-w-0">
+                      <p className="font-medium text-[#1a1a1a] truncate">{label}</p>
+                      {pct != null && (
+                        <p className="text-sm tabular-nums text-slate-600">{pct}% 10-year</p>
+                      )}
+                    </div>
+                    <span className={`shrink-0 inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold ${config.badge}`}>
+                      <LevelIcon size={12} />
+                      {config.label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Disclaimer */}
         <div className="rounded-xl border border-slate-200 bg-slate-50 px-6 py-5 print-break-inside-avoid">

@@ -1,0 +1,1 @@
+export { calculateFraminghamRisk } from "./calculator";

@@ -9,6 +9,7 @@ import type { RiskCandidate } from "@/app/lib/risk-calculations";
 
 export interface PredictionResponse {
   top3: RiskCandidate[];
+  allRisks: RiskCandidate[];
   errors: string[];
   warnings: string[];
 }
@@ -33,6 +34,7 @@ async function handlePrediction(request: NextRequest): Promise<PredictionRespons
   if (!validation.isValid) {
     return {
       top3: [],
+      allRisks: [],
       errors: validation.errors.map((e) => e.message),
       warnings: [],
     };
@@ -54,6 +56,7 @@ async function handlePrediction(request: NextRequest): Promise<PredictionRespons
   // Step 7: Return structured response
   return {
     top3: assessment.top3,
+    allRisks: assessment.allRisks,
     errors: [],
     warnings: allWarnings,
   };

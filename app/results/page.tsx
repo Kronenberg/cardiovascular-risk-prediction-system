@@ -18,6 +18,7 @@ type RiskResult = {
 
 type ResultsData = {
   top3: RiskResult[];
+  allRisks?: RiskResult[];
   errors: string[];
   warnings: string[];
 };
